@@ -35,13 +35,6 @@ defmodule Permit.Ecto.Permissions do
           Ecto.Query.from(_ in resource_module)
         end)
 
-      # TODO: where the fuck to get params from?
-      # resource_module
-      # |> prefilter.(action, resource_module, params)
-      # |> where(^filter)
-      # |> then(&{:ok, &1})
-      # dbg()
-
       prefilter.(action, resource_module, params)
       |> where(^filter)
       |> then(&{:ok, &1})

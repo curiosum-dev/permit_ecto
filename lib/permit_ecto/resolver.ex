@@ -23,9 +23,19 @@ defmodule Permit.Ecto.Resolver do
         :unauthorized
 
       nil ->
-        case check_existence(authorization_module, resource_module, prefilter_query_fn) do
-          true -> :unauthorized
-          false -> raise Ecto.NoResultsError, queryable: prefilter_query_fn.(resource_module)
+        case check_existence(
+               authorization_module,
+               resource_module,
+               prefilter_query_fn,
+               action,
+               meta
+             ) do
+          true ->
+            :unauthorized
+
+          false ->
+            raise Ecto.NoResultsError,
+              queryable: prefilter_query_fn.(action, resource_module, meta["params"])
         end
     end
   end
@@ -71,10 +81,10 @@ defmodule Permit.Ecto.Resolver do
     |> Map.put_new(:postfilter_query_fn, & &1)
   end
 
-  defp check_existence(authorization_module, resource, prefilter_query_fn) do
-    resource
-    |> resource_module_from_resource()
-    |> prefilter_query_fn.()
-    |> authorization_module.repo.exists?()
+  defp check_existence(authorization_module, resource, prefilter_query_fn, action, meta) do
+    with module <- resource_module_from_resource(resource),
+         query <- prefilter_query_fn.(action, module, meta[:params]) do
+      authorization_module.repo.exists?(query)
+    end
   end
 end

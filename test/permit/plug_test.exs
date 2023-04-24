@@ -261,7 +261,9 @@ defmodule Permit.PlugTest do
   end
 
   defp assert_unauthorized(conn, fallback_path) do
-    assert conn.private.phoenix_flash["error"]
+    assert get_in(conn.private, [:phoenix_flash, "error"]) ||
+             get_in(conn.assigns, [:flash, "error"])
+
     assert Map.new(conn.resp_headers)["location"] == fallback_path
   end
 
