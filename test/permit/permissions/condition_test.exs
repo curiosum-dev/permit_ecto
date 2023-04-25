@@ -8,7 +8,6 @@ end
 defmodule Permit.Permissions.ConditionTest do
   use ExUnit.Case, async: true
 
-  #   alias Permit.Ecto.ParsedCondition
   alias Permit.Permissions.ParsedCondition
   alias Permit.Permissions.ConditionTest.Types.TestObject
 

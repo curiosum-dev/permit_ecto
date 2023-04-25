@@ -78,7 +78,7 @@ defmodule Permit.Ecto.Resolver do
     |> Map.put_new(:prefilter_query_fn, fn _action, resource_module, _params ->
       Ecto.Query.from(_ in resource_module)
     end)
-    |> Map.put_new(:postfilter_query_fn, & &1)
+    |> Map.put_new(:postfilter_query_fn, &Function.identity/1)
   end
 
   defp check_existence(authorization_module, resource, prefilter_query_fn, action, meta) do

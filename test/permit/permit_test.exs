@@ -18,13 +18,15 @@ defmodule Permit.PermitTest do
 
   defmodule TestPermissions do
     @moduledoc false
-    use Permit.Ecto.RuleSyntax,
+    use Permit.RuleSyntax,
       actions_module: TestActions
+
+    def can(role), do: grant(role)
   end
 
   defmodule TestAuthorization do
     @moduledoc false
-    use Permit.Ecto,
+    use Permit,
       permissions_module: TestPermissions
   end
 
