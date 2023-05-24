@@ -1,5 +1,5 @@
 defmodule Permit.FakeApp.Permissions do
-  use Permit.Ecto.RuleSyntax, actions_module: Permit.Actions.PhoenixActions
+  use Permit.Ecto.RuleSyntax, actions_module: Permit.FakeApp.PhoenixActions
 
   alias Permit.FakeApp.Item
   alias Permit.FakeApp.User

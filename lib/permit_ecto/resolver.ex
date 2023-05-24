@@ -67,7 +67,7 @@ defmodule Permit.Ecto.Resolver do
        ) do
     subject
     |> authorization_module.accessible_by!(action, resource_module,
-      prefilter: prefilter_query_fn,
+      prefilter_query_fn: prefilter_query_fn,
       params: params
     )
     |> postfilter_query_fn.()

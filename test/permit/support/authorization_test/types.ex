@@ -1,4 +1,5 @@
 defmodule Permit.AuthorizationTest.Types do
+  # TODO: These should be Ecto schemas?
   defmodule TestUser do
     @moduledoc false
 

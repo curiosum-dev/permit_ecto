@@ -20,13 +20,12 @@ defmodule Permit.Ecto do
               keyword()
             ) ::
               {:ok, Ecto.Query.t()} | {:error, term()}
-      # TODO: prefilter should be 3-arg
       def accessible_by(current_user, action, resource, opts \\ []) do
-        # prefilter is (Types.resource() -> Ecto.Query.t())
+        # prefilter_query_fn is (Types.resource() -> Ecto.Query.t())
         opts =
           opts
           |> Keyword.put_new(:params, %{})
-          |> Keyword.put_new(:prefilter, fn _action, resource_module, _params ->
+          |> Keyword.put_new(:prefilter_query_fn, fn _action, resource_module, _params ->
             Ecto.Query.from(_ in resource_module)
           end)
 
@@ -64,5 +63,17 @@ defmodule Permit.Ecto do
 
       def resolver_module, do: Permit.Ecto.Resolver
     end
+  end
+
+  require Ecto.Query
+
+  @spec from(Ecto.Queryable.t()) :: Ecto.Query.t()
+  def from(queryable) do
+    Ecto.Query.from(queryable)
+  end
+
+  def filter_by_field(query, field_name, value) do
+    query
+    |> Ecto.Query.where([it], field(it, ^field_name) == ^value)
   end
 end

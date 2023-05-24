@@ -6,6 +6,6 @@ defmodule Permit.RepoCase do
 
   setup do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
-    Ecto.Adapters.SQL.Sandbox.mode(Repo, {:shared, self()})
+    Ecto.Adapters.SQL.Sandbox.mode(Repo, {:shared, self()}) |> IO.inspect(label: :setup)
   end
 end
