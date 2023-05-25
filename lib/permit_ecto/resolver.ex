@@ -7,7 +7,7 @@ defmodule Permit.Ecto.Resolver do
 
   @impl Permit.ResolverBase
   def resolve(subject, authorization_module, resource_module, action, %{} = meta, :one) do
-    %{prefilter_query_fn: prefilter_query_fn} = meta = ensure_meta_defaults(meta)
+    %{base_query: base_query} = meta = ensure_meta_defaults(meta)
 
     with {_, true} <-
            {:pre_auth, authorized?(subject, authorization_module, resource_module, action)},
@@ -26,8 +26,9 @@ defmodule Permit.Ecto.Resolver do
         case check_existence(
                authorization_module,
                resource_module,
-               prefilter_query_fn,
+               base_query,
                action,
+               subject,
                meta
              ) do
           true ->
@@ -35,7 +36,7 @@ defmodule Permit.Ecto.Resolver do
 
           false ->
             raise Ecto.NoResultsError,
-              queryable: prefilter_query_fn.(action, resource_module, meta["params"])
+              queryable: base_query.(action, resource_module, subject, meta["params"])
         end
     end
   end
@@ -60,30 +61,33 @@ defmodule Permit.Ecto.Resolver do
          resource_module,
          action,
          %{
-           prefilter_query_fn: prefilter_query_fn,
-           postfilter_query_fn: postfilter_query_fn,
+           base_query: base_query,
+           finalize_query: finalize_query,
            params: params
          } = _meta
        ) do
     subject
     |> authorization_module.accessible_by!(action, resource_module,
-      prefilter_query_fn: prefilter_query_fn,
+      base_query: base_query,
       params: params
     )
-    |> postfilter_query_fn.()
+    |> finalize_query.()
   end
 
   defp ensure_meta_defaults(meta) do
     meta
-    |> Map.put_new(:prefilter_query_fn, fn _action, resource_module, _params ->
+    |> Map.put_new(:base_query, fn _action, resource_module, _subject, _params ->
       Ecto.Query.from(_ in resource_module)
     end)
-    |> Map.put_new(:postfilter_query_fn, &Function.identity/1)
+    # |> Map.put_new(:finalize_query, &Function.identity/1)
+    |> Map.put_new(:finalize_query, fn query, _action, _resource_module, _subject, _params ->
+      query
+    end)
   end
 
-  defp check_existence(authorization_module, resource, prefilter_query_fn, action, meta) do
+  defp check_existence(authorization_module, resource, base_query, action, subject, meta) do
     with module <- resource_module_from_resource(resource),
-         query <- prefilter_query_fn.(action, module, meta[:params]) do
+         query <- base_query.(action, module, subject, meta[:params]) do
       authorization_module.repo.exists?(query)
     end
   end

@@ -42,7 +42,7 @@ defmodule Permit.Ecto.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:permit, "~> 0.0.2"},
+      {:permit, "~> 0.0.3"},
       {:ecto, "~> 3.0"},
       {:ecto_sql, "~> 3.0"},
       {:postgrex, "~> 0.15.13", only: :test},

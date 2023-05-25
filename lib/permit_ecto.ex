@@ -21,11 +21,11 @@ defmodule Permit.Ecto do
             ) ::
               {:ok, Ecto.Query.t()} | {:error, term()}
       def accessible_by(current_user, action, resource, opts \\ []) do
-        # prefilter_query_fn is (Types.resource() -> Ecto.Query.t())
+        # base_query is (Types.resource() -> Ecto.Query.t())
         opts =
           opts
           |> Keyword.put_new(:params, %{})
-          |> Keyword.put_new(:prefilter_query_fn, fn _action, resource_module, _params ->
+          |> Keyword.put_new(:base_query, fn _action, resource_module, _params ->
             Ecto.Query.from(_ in resource_module)
           end)
 

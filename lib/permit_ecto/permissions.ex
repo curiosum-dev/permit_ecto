@@ -25,17 +25,17 @@ defmodule Permit.Ecto.Permissions do
         opts \\ []
       ) do
     with {:ok, filter} <- transitive_query(permissions, actions_module, action, resource, subject) do
-      # prefilter_query_fn is (Types.resource() -> Ecto.Query.t())
+      # base_query is (Types.resource() -> Ecto.Query.t())
       params = Keyword.get(opts, :params, %{})
 
       resource_module = resource_module_from_resource(resource)
 
-      prefilter_query_fn =
-        Keyword.get(opts, :prefilter_query_fn, fn _action, resource_module, _params ->
+      base_query =
+        Keyword.get(opts, :base_query, fn _action, resource_module, _params ->
           Ecto.Query.from(_ in resource_module)
         end)
 
-      prefilter_query_fn.(action, resource_module, params)
+      base_query.(action, resource_module, subject, params)
       |> where(^filter)
       |> then(&{:ok, &1})
     end
