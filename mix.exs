@@ -4,7 +4,7 @@ defmodule Permit.Ecto.MixProject do
   def project do
     [
       app: :permit_ecto,
-      version: "0.1.0",
+      version: "0.0.1",
       elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -42,11 +42,12 @@ defmodule Permit.Ecto.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:permit, path: "../permit"},
+      {:permit, "~> 0.0.2"},
       {:ecto, "~> 3.0"},
       {:ecto_sql, "~> 3.0"},
       {:postgrex, "~> 0.15.13", only: :test},
-      {:jason, "~> 1.3", only: [:dev, :test]}
+      {:jason, "~> 1.3", only: [:dev, :test]},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 end
