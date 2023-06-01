@@ -4,7 +4,7 @@ defmodule Permit.Ecto.MixProject do
   def project do
     [
       app: :permit_ecto,
-      version: "0.0.2",
+      version: "0.0.3",
       elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
@@ -28,8 +28,8 @@ defmodule Permit.Ecto.MixProject do
     [
       extra_applications:
         case Mix.env() do
-          :test -> [:logger, :plug]
-          :dev -> [:logger, :plug]
+          :test -> [:logger]
+          :dev -> [:logger]
           _ -> [:logger]
         end
     ]

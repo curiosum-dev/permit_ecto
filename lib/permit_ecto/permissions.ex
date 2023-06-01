@@ -31,7 +31,7 @@ defmodule Permit.Ecto.Permissions do
       resource_module = resource_module_from_resource(resource)
 
       base_query =
-        Keyword.get(opts, :base_query, fn _action, resource_module, _params ->
+        Keyword.get(opts, :base_query, fn _action, resource_module, _subject, _params ->
           Ecto.Query.from(_ in resource_module)
         end)
 

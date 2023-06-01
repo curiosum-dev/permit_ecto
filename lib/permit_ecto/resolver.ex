@@ -71,7 +71,7 @@ defmodule Permit.Ecto.Resolver do
       base_query: base_query,
       params: params
     )
-    |> finalize_query.()
+    |> finalize_query.(action, resource_module, subject, params)
   end
 
   defp ensure_meta_defaults(meta) do

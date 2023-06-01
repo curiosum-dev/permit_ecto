@@ -25,7 +25,7 @@ defmodule Permit.Ecto do
         opts =
           opts
           |> Keyword.put_new(:params, %{})
-          |> Keyword.put_new(:base_query, fn _action, resource_module, _params ->
+          |> Keyword.put_new(:base_query, fn _action, resource_module, _subject, _params ->
             Ecto.Query.from(_ in resource_module)
           end)
 
