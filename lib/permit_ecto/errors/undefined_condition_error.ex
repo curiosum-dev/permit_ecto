@@ -1,4 +1,9 @@
-defmodule Permit.Ecto.Permissions.UndefinedConditionError do
+defmodule Permit.Ecto.UndefinedConditionError do
+  @moduledoc """
+  Raised when the permissions module (implementing `Permit.Permissions`) does not contain sufficient
+  information to compute authorization for a given action.
+  """
+
   alias __MODULE__
   defexception [:message]
 

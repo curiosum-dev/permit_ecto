@@ -1,4 +1,5 @@
 defmodule Permit.FakeApp.Item.Context do
+  @moduledoc false
   import Ecto.Query
   alias Permit.FakeApp.Item
   alias Permit.FakeApp.Repo

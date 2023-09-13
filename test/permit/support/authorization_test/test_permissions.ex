@@ -1,6 +1,6 @@
 defmodule Permit.AuthorizationTest.TestPermissions do
   @moduledoc false
-  use Permit.Ecto.RuleSyntax
+  use Permit.Ecto.Permissions
 
   alias Permit.AuthorizationTest.Types.{TestObject, TestUser, TestUserAsRole}
 

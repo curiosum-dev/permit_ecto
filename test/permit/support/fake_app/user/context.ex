@@ -1,4 +1,5 @@
 defmodule Permit.FakeApp.User.Context do
+  @moduledoc false
   alias Permit.FakeApp.User
   alias Permit.FakeApp.Repo
 

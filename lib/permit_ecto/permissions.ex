@@ -1,41 +1,104 @@
 defmodule Permit.Ecto.Permissions do
+  @moduledoc ~S"""
+  Defines the application's permission set. Replaces `Permit.Permissions` when
+  `Permit.Ecto` is used, but its syntax is identical.
+
+  ## Example
+
+  ```
+  defmodule MyApp.Permissions do
+    use Permit.Permissions, actions_module: Permit.Actions.CrudActions
+
+    @impl true
+    def can(%MyApp.User{role: :admin}) do
+      permit()
+      |> all(Article)
+    end
+
+    def can(%MyApp.User{id: user_id}) do
+      permit()
+      |> read(Article)
+      |> all(Article, author_id: user_id)
+    end
+
+    def can(_), do: permit()
+  end
+  ```
+
+  ## Condition conversion
+
+  Conditions defined using standard operators such as equality, inequality, greater-than, less-than,
+  LIKE and ILIKE are converted automatically (see `Permit.Operators`).
+
+  Other conditions, such as those given as functions,
+
+  Refer to `Permit.Permissions` documentation for more examples of usage.
+
+  """
+
   import Ecto.Query
 
-  alias Permit.Types
   alias Permit.Actions
-  alias Permit.Ecto.Permissions.DisjunctiveNormalForm, as: DNF
+  alias Permit.Ecto.Permissions.ConditionParser
+  alias Permit.Ecto.Permissions.DynamicQueryJoiner
+  alias Permit.Ecto.Types.ConditionTypes
+  alias Permit.Permissions
+  alias Permit.Types
 
-  import Permit.Permissions, only: [resource_module_from_resource: 1]
+  import Permit.Helpers, only: [resource_module_from_resource: 1]
+
+  defmacro __using__(opts) do
+    extended_opts =
+      [
+        {:condition_parser, &ConditionParser.build/2},
+        {:condition_types_module, ConditionTypes}
+      ] ++ opts
+
+    quote do
+      use Permit.Permissions, unquote(extended_opts)
+
+      import unquote(__MODULE__)
+    end
+  end
 
   @spec construct_query(
           Permissions.t(),
           Types.action_group(),
-          Types.resource(),
+          Types.object_or_resource_module(),
           Types.subject(),
           module(),
-          keyword()
+          map()
         ) ::
-          {:ok, Ecto.Query.t()} | {:error, [term()]}
+          {:ok, Ecto.Query.t()} | {:error, term()}
   def construct_query(
         permissions,
         action,
         resource,
         subject,
         actions_module,
-        opts \\ []
+        opts \\ %{}
       ) do
     with {:ok, filter} <- transitive_query(permissions, actions_module, action, resource, subject) do
-      # base_query is (Types.resource() -> Ecto.Query.t())
-      params = Keyword.get(opts, :params, %{})
+      # base_query is (Types.object_or_resource_module() -> Ecto.Query.t())
+      # params = Map.get(opts, :params, %{})
 
       resource_module = resource_module_from_resource(resource)
 
       base_query =
-        Keyword.get(opts, :base_query, fn _action, resource_module, _subject, _params ->
+        Map.get(opts, :base_query, fn %{resource_module: resource_module} ->
           Ecto.Query.from(_ in resource_module)
         end)
 
-      base_query.(action, resource_module, subject, params)
+      ctx =
+        %{
+          action: action,
+          resource_module: resource_module,
+          subject: subject
+        }
+        |> Map.merge(opts)
+
+      ctx
+      |> base_query.()
       |> where(^filter)
       |> then(&{:ok, &1})
     end
@@ -49,7 +112,7 @@ defmodule Permit.Ecto.Permissions do
     value = fn action ->
       permissions.conditions_map
       |> Map.get({action, res_module})
-      |> DNF.to_dynamic_query(subject, resource)
+      |> DynamicQueryJoiner.to_dynamic_query(subject, resource)
     end
 
     empty = &throw({:undefined_condition, {&1, res_module}})
@@ -70,7 +133,11 @@ defmodule Permit.Ecto.Permissions do
     end
   end
 
-  @spec conditions_defined_for?(Permissions.t(), Types.controller_action(), Types.resource()) ::
+  @spec conditions_defined_for?(
+          Permissions.t(),
+          Types.action_group(),
+          Types.object_or_resource_module()
+        ) ::
           boolean()
   defp conditions_defined_for?(permissions, action, resource) do
     permissions.conditions_map[{action, resource}]

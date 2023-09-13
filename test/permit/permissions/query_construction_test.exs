@@ -19,10 +19,13 @@ defmodule Permit.Permissions.QueryConstructionTest do
     conditions
     |> Code.eval_string()
     |> elem(0)
-    |> Enum.map(
-      &(Permit.RuleSyntax.parse_condition(&1, [])
-        |> Permit.Ecto.RuleSyntax.decorate_condition())
-    )
+    |> Enum.map(fn raw_condition ->
+      Permit.Permissions.parse_condition(
+        raw_condition,
+        [],
+        &Permit.Ecto.Permissions.ConditionParser.build/2
+      )
+    end)
   end
 
   setup do
@@ -35,6 +38,16 @@ defmodule Permit.Permissions.QueryConstructionTest do
       |> Permissions.add(:update, Resource, ~q/[name: {:ilike, "%NAME"}]/)
       |> Permissions.add(:read, Resource, ~q/[foo: {:eq, 1}, name: {:not, nil}]/)
       |> Permissions.add(:create, Resource, ~q/[name: {:like, "%"}, foo: nil]/)
+
+    query_convertible_function =
+      Permissions.new()
+      |> Permissions.add(:delete, Resource, ~q/[
+        (require Ecto.Query) &&
+        {fn _subject, object -> object.foo == 1 end,
+         fn _subject, _object ->
+           Ecto.Query.dynamic([o], o.foo == 1)
+         end}
+      ]/)
 
     query_convertible_nil =
       Permissions.new()
@@ -55,6 +68,7 @@ defmodule Permit.Permissions.QueryConstructionTest do
       resource: resource,
       convertible: query_convertible,
       convertible_nil: query_convertible_nil,
+      convertible_function: query_convertible_function,
       nonconvertible: query_nonconvertible,
       actions_module: Permit.Actions.CrudActions,
       subject: nil
@@ -79,6 +93,16 @@ defmodule Permit.Permissions.QueryConstructionTest do
 
       assert {:ok, _query} =
                EctoPermissions.construct_query(permissions, :update, res, subject, module)
+    end
+
+    test "should construct query for permissions defined with functions", %{
+      resource: res,
+      convertible_function: permissions,
+      actions_module: module,
+      subject: subject
+    } do
+      assert {:ok, _query} =
+               EctoPermissions.construct_query(permissions, :delete, res, subject, module)
     end
 
     test "should not construct ecto query", %{

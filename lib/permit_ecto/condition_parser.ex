@@ -1,30 +1,28 @@
-defmodule Permit.Ecto.RuleSyntax do
-  import Ecto.Query
-
+defmodule Permit.Ecto.Permissions.ConditionParser do
+  @moduledoc false
+  alias Permit.Permissions.ConditionParser
   alias Permit.Permissions.ParsedCondition
 
-  def decorate_condition(parsed_condition) do
-    %{
-      parsed_condition
-      | private:
-          Map.put(
-            parsed_condition.private,
-            :dynamic_query_fn,
-            parsed_condition_to_dynamic_query_fn(parsed_condition)
-          )
-    }
+  import Ecto.Query
+
+  @behaviour Permit.Permissions.ConditionParserBase
+
+  @impl true
+  def build({semantics_fun, query_fun}, ops)
+      when is_function(semantics_fun) and is_function(query_fun) do
+    ConditionParser.build(semantics_fun, ops)
+    |> put_query_function(query_fun)
   end
 
-  defmacro __using__(opts) do
-    opts_with_decorator = [
-      {:condition_decorator, &Permit.Ecto.RuleSyntax.decorate_condition/1} | opts
-    ]
-
-    quote do
-      use Permit.RuleSyntax, unquote(opts_with_decorator)
-
-      import Permit.Ecto.RuleSyntax
-    end
+  def build(raw_condition, ops) do
+    ConditionParser.build(raw_condition, ops)
+    |> then(
+      &%{
+        &1
+        | private:
+            Map.put(&1.private, :dynamic_query_fn, parsed_condition_to_dynamic_query_fn(&1))
+      }
+    )
   end
 
   defp parsed_condition_to_dynamic_query_fn(%ParsedCondition{
@@ -65,6 +63,22 @@ defmodule Permit.Ecto.RuleSyntax do
 
       query ->
         &{:ok, query.(&1)}
+    end
+  end
+
+  defp put_query_function(%ParsedCondition{} = condition, query_fun) do
+    case query_fun do
+      f when is_function(f, 2) ->
+        %ParsedCondition{
+          condition
+          | private: Map.put(condition.private, :dynamic_query_fn, &{:ok, query_fun.(&1, &2)})
+        }
+
+      f when is_function(f, 1) ->
+        %ParsedCondition{
+          condition
+          | private: Map.put(condition.private, :dynamic_query_fn, &{:ok, query_fun.(&1)})
+        }
     end
   end
 end
