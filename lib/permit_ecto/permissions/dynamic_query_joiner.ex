@@ -1,13 +1,25 @@
-defmodule Permit.Ecto.Permissions.DisjunctiveNormalForm do
+defmodule Permit.Ecto.Permissions.DynamicQueryJoiner do
+  @moduledoc """
+  Joins a DNF of conditions represented by a `Permit.Permissions.DisjunctiveNormalForm`
+  into an Ecto dynamic query.
+
+  Part of the private API, subject to changes and not to be used on the
+  application level.
+  """
+
   import Ecto.Query
 
-  alias Permit.Permissions.DisjunctiveNormalForm, as: DNF
   alias Permit.Ecto.Permissions.Conjunction
+  alias Permit.Permissions.DisjunctiveNormalForm
   alias Permit.Types
 
-  @spec to_dynamic_query(DNF.t(), Types.resource(), Types.subject()) ::
+  @spec to_dynamic_query(
+          DisjunctiveNormalForm.t(),
+          Types.object_or_resource_module(),
+          Types.subject()
+        ) ::
           {:ok, Ecto.Query.t()} | {:error, term()}
-  def to_dynamic_query(%DNF{disjunctions: disjunctions}, subject, resource) do
+  def to_dynamic_query(%DisjunctiveNormalForm{disjunctions: disjunctions}, subject, resource) do
     disjunctions
     |> Enum.map(&Conjunction.to_dynamic_query_expr(&1, subject, resource))
     |> case do

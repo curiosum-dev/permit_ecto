@@ -1,12 +1,11 @@
 defmodule Permit.AuthorizationTest.Types do
-  # TODO: These should be Ecto schemas?
   defmodule TestUser do
     @moduledoc false
 
     defstruct [:id, :role, :overseer_id, :some_string]
 
-    defimpl Permit.HasRoles, for: Permit.AuthorizationTest.Types.TestUser do
-      def roles(user), do: [user.role]
+    defimpl Permit.SubjectMapping, for: Permit.AuthorizationTest.Types.TestUser do
+      def subjects(user), do: [user.role]
     end
   end
 
@@ -15,8 +14,8 @@ defmodule Permit.AuthorizationTest.Types do
 
     defstruct [:id, :role, :overseer_id]
 
-    defimpl Permit.HasRoles, for: Permit.AuthorizationTest.Types.TestUserAsRole do
-      def roles(user), do: [user]
+    defimpl Permit.SubjectMapping, for: Permit.AuthorizationTest.Types.TestUserAsRole do
+      def subjects(user), do: [user]
     end
   end
 

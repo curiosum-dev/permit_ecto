@@ -1,8 +1,8 @@
-defmodule Permit.Permissions.LikePatternCompilerTest do
+defmodule Permit.Permissions.PatternCompilerTest do
   use ExUnit.Case, async: true
 
   describe "to_regex/2" do
-    import Permit.Permissions.ParsedCondition.LikePatternCompiler,
+    import Permit.Operators.Ilike.PatternCompiler,
       only: [to_regex: 2]
 
     test "ignore case when needed" do
@@ -42,7 +42,7 @@ defmodule Permit.Permissions.LikePatternCompilerTest do
   end
 
   describe "to_regex/1" do
-    import Permit.Permissions.ParsedCondition.LikePatternCompiler,
+    import Permit.Operators.Ilike.PatternCompiler,
       only: [to_regex: 1]
 
     test "simple conversions" do

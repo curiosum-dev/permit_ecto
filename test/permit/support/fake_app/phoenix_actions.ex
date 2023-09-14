@@ -1,7 +1,5 @@
 defmodule Permit.FakeApp.PhoenixActions do
-  @moduledoc """
-
-  """
+  @moduledoc false
   use Permit.Actions
 
   @impl Permit.Actions
@@ -15,6 +13,6 @@ defmodule Permit.FakeApp.PhoenixActions do
     |> Map.merge(crud_grouping())
   end
 
-  def singular_groups,
+  def singular_actions,
     do: [:show, :edit, :new]
 end

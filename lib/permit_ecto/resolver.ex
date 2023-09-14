@@ -1,4 +1,15 @@
 defmodule Permit.Ecto.Resolver do
+  @moduledoc """
+  Implementation of `Permit.ResolverBase` behaviour, resolving and checks authorization of records or lists of records based on automatic Ecto query construction, taking parameters as input and `:base_query` and `:finalize_query` functions as means to transform the query based on e.g. current controller context.
+
+  For a resolver implementation not using Ecto for fetching resources, see `Permit.Resolver` from the `permit` library.
+
+  The usage of `Permit.Ecto.Resolver` as opposed to `Permit.Resolver` in `permit_ecto` library occurs because in the `m:Permit.Ecto.__using__/1` macro the `resolver_module/0` function is overridden to point to `Permit.Ecto.Resolver`.
+
+  This module is to be considered a private API of the authorization framework.
+  It should not be directly used by application code, but rather by wrappers
+  providing integration with e.g. Plug or LiveView.
+  """
   use Permit.ResolverBase
 
   require Ecto.Query
@@ -31,12 +42,8 @@ defmodule Permit.Ecto.Resolver do
                subject,
                meta
              ) do
-          true ->
-            :unauthorized
-
-          false ->
-            raise Ecto.NoResultsError,
-              queryable: base_query.(action, resource_module, subject, meta["params"])
+          {true, _} -> :unauthorized
+          {false, query} -> raise Ecto.NoResultsError, queryable: query
         end
     end
   end
@@ -60,35 +67,29 @@ defmodule Permit.Ecto.Resolver do
          authorization_module,
          resource_module,
          action,
-         %{
-           base_query: base_query,
-           finalize_query: finalize_query,
-           params: params
-         } = _meta
+         %{finalize_query: finalize_query} = meta
        ) do
     subject
-    |> authorization_module.accessible_by!(action, resource_module,
-      base_query: base_query,
-      params: params
-    )
-    |> finalize_query.(action, resource_module, subject, params)
+    |> authorization_module.accessible_by!(action, resource_module, meta)
+    |> finalize_query.(meta)
   end
 
   defp ensure_meta_defaults(meta) do
     meta
-    |> Map.put_new(:base_query, fn _action, resource_module, _subject, _params ->
+    |> Map.put_new(:base_query, fn %{resource_module: resource_module} ->
       Ecto.Query.from(_ in resource_module)
     end)
-    # |> Map.put_new(:finalize_query, &Function.identity/1)
-    |> Map.put_new(:finalize_query, fn query, _action, _resource_module, _subject, _params ->
+    |> Map.put_new(:finalize_query, fn query, %{} ->
       query
     end)
   end
 
   defp check_existence(authorization_module, resource, base_query, action, subject, meta) do
     with module <- resource_module_from_resource(resource),
-         query <- base_query.(action, module, subject, meta[:params]) do
-      authorization_module.repo.exists?(query)
+         resolution_context <-
+           Map.merge(%{action: action, resource_module: module, subject: subject}, meta),
+         query <- base_query.(resolution_context) do
+      {authorization_module.repo.exists?(query), query}
     end
   end
 end

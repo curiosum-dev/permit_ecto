@@ -1,7 +1,10 @@
-defmodule Permit.Permissions.Operators.Le.DynamicQuery do
+defmodule Permit.Operators.Le.DynamicQuery do
+  @moduledoc false
   import Ecto.Query, only: [dynamic: 2]
 
-  @spec dynamic_query_fn(term(), boolean()) :: (any() -> Ecto.Query.DynamicExpr.t()) | nil
+  @behaviour Permit.Operators.DynamicQuery
+
+  @impl true
   def dynamic_query_fn(key, not?) do
     if not? do
       &dynamic([r], field(r, ^key) > ^&1)
