@@ -19,6 +19,6 @@ defmodule Permit.FakeApp.User do
   end
 
   defimpl Permit.SubjectMapping, for: Permit.FakeApp.User do
-    def subjects(user), do: user.roles
+    def subjects(user), do: [user]
   end
 end

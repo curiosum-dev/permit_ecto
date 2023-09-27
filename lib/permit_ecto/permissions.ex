@@ -107,25 +107,39 @@ defmodule Permit.Ecto.Permissions do
   defp transitive_query(permissions, actions_module, action, resource, subject) do
     res_module = resource_module_from_resource(resource)
 
-    condition = &conditions_defined_for?(permissions, &1, res_module)
-
-    value = fn action ->
-      permissions.conditions_map
-      |> Map.get({action, res_module})
-      |> DynamicQueryJoiner.to_dynamic_query(subject, resource)
+    value_fn = fn action ->
+      case Map.get(permissions.conditions_map, {action, res_module}) do
+        nil -> {:ok, dynamic(false)}
+        dnf -> DynamicQueryJoiner.to_dynamic_query(dnf, subject, resource)
+      end
     end
 
     empty = &throw({:undefined_condition, {&1, res_module}})
-    join = fn l -> Enum.reduce(l, &join_queries/2) end
+
+    conj = fn
+      [] ->
+        :nothing
+
+      l ->
+        Enum.reduce(l, &conj_queries/2)
+    end
+
+    disj = fn
+      [] ->
+        :nothing
+
+      l ->
+        Enum.reduce(l, &disj_queries/2)
+    end
 
     try do
       Actions.traverse_actions!(
         actions_module,
         action,
-        condition,
-        value,
+        value_fn,
         empty,
-        join
+        conj,
+        disj
       )
     catch
       {:undefined_condition, _} = error ->
@@ -133,29 +147,39 @@ defmodule Permit.Ecto.Permissions do
     end
   end
 
-  @spec conditions_defined_for?(
-          Permissions.t(),
-          Types.action_group(),
-          Types.object_or_resource_module()
-        ) ::
-          boolean()
-  defp conditions_defined_for?(permissions, action, resource) do
-    permissions.conditions_map[{action, resource}]
-    |> case do
-      nil -> false
-      _ -> true
-    end
-  end
+  defp conj_queries(:nothing, {:ok, query}), do: {:ok, query}
 
-  defp join_queries({:ok, query1}, {:ok, query2}),
-    do: {:ok, query1 and query2}
+  defp conj_queries({:ok, query}, :nothing), do: {:ok, query}
 
-  defp join_queries({:error, errors}, {:ok, _}),
+  defp conj_queries(:nothing, :nothing), do: :nothing
+
+  defp conj_queries({:ok, query1}, {:ok, query2}),
+    do: {:ok, dynamic(^query1 and ^query2)}
+
+  defp conj_queries({:error, errors}, _),
     do: {:error, errors}
 
-  defp join_queries({:ok, _}, {:error, errors}),
+  defp conj_queries(_, {:error, errors}),
     do: {:error, errors}
 
-  defp join_queries({:error, err1}, {:error, err2}),
+  defp conj_queries({:error, err1}, {:error, err2}),
+    do: {:error, err1 ++ err2}
+
+  defp disj_queries(:nothing, {:ok, query}), do: {:ok, query}
+
+  defp disj_queries({:ok, query}, :nothing), do: {:ok, query}
+
+  defp disj_queries(:nothing, :nothing), do: :nothing
+
+  defp disj_queries({:ok, query1}, {:ok, query2}),
+    do: {:ok, dynamic(^query1 or ^query2)}
+
+  defp disj_queries({:error, errors}, _),
+    do: {:error, errors}
+
+  defp disj_queries(_, {:error, errors}),
+    do: {:error, errors}
+
+  defp disj_queries({:error, err1}, {:error, err2}),
     do: {:error, err1 ++ err2}
 end

@@ -1,6 +1,6 @@
 defmodule Permit.FakeApp.Repo do
   use Ecto.Repo,
-    otp_app: :permit_phoenix,
+    otp_app: :permit_ecto,
     adapter: Ecto.Adapters.Postgres
 
   alias Permit.FakeApp.{User, Item, Repo}
