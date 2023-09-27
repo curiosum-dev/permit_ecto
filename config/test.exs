@@ -6,10 +6,10 @@ import Config
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 
-config :permit,
+config :permit_ecto,
   ecto_repos: [Permit.FakeApp.Repo]
 
-config :permit, Permit.FakeApp.Repo,
+config :permit_ecto, Permit.FakeApp.Repo,
   adapter: Ecto.Adapters.Postgres,
   username: "postgres",
   password: "postgres",
