@@ -34,7 +34,7 @@ defmodule Permit.Ecto.Resolver do
 
     with {_, true} <-
            {:pre_auth, authorized?(subject, authorization_module, resource_module, action)},
-         resource <- meta[:loader].(params_for_loader),
+         resource when not is_nil(resource) <- meta[:loader].(params_for_loader),
          {:auth, resource, true} <-
            check_authorized(resource, subject, authorization_module, action) do
       {:authorized, resource}
@@ -46,7 +46,7 @@ defmodule Permit.Ecto.Resolver do
         :unauthorized
 
       nil ->
-        raise Ecto.NoResultsError
+        nil
     end
   end
 
@@ -76,7 +76,7 @@ defmodule Permit.Ecto.Resolver do
                meta
              ) do
           {true, _} -> :unauthorized
-          {false, query} -> raise Ecto.NoResultsError, queryable: query
+          {false, _query} -> nil
         end
     end
   end
