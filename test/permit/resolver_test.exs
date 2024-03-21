@@ -65,6 +65,15 @@ defmodule Permit.Ecto.ResolverTest do
                  :index,
                  %{}
                )
+
+      assert {:authorized, [%Item{id: 3}, %Item{id: 2}, %Item{id: 1}]} =
+               Permit.Ecto.Resolver.authorize_and_preload_all!(
+                 %User{id: 1},
+                 authorization_module,
+                 Item,
+                 :index,
+                 %{use_loader?: true, loader: fn x -> Item |> Repo.all() end}
+               )
     end
 
     test "retrieves only limited records if a restricted :all permission is present" do
@@ -85,6 +94,15 @@ defmodule Permit.Ecto.ResolverTest do
                  :index,
                  %{}
                )
+
+      assert {:authorized, [%Item{id: 1}]} =
+               Permit.Ecto.Resolver.authorize_and_preload_all!(
+                 %User{id: 1},
+                 authorization_module,
+                 Item,
+                 :index,
+                 %{use_loader?: true, loader: fn x -> Item |> Repo.all() end}
+               )
     end
 
     test "returns :unauthorized for empty set of permissions" do
@@ -101,6 +119,15 @@ defmodule Permit.Ecto.ResolverTest do
                  Item,
                  :index,
                  %{}
+               )
+
+      assert :unauthorized =
+               Permit.Ecto.Resolver.authorize_and_preload_all!(
+                 %User{id: 1},
+                 authorization_module,
+                 Item,
+                 :index,
+                 %{use_loader?: true, loader: fn x -> Item |> Repo.all() end}
                )
     end
 
@@ -119,6 +146,15 @@ defmodule Permit.Ecto.ResolverTest do
                  :index,
                  %{}
                )
+
+      assert {:authorized, []} =
+               Permit.Ecto.Resolver.authorize_and_preload_all!(
+                 %User{id: 1},
+                 authorization_module,
+                 Item,
+                 :index,
+                 %{use_loader?: true, loader: fn x -> Item |> Repo.all() end}
+               )
     end
 
     test "returns records when some permissions match, other don't" do
@@ -135,6 +171,15 @@ defmodule Permit.Ecto.ResolverTest do
                  Item,
                  :index,
                  %{}
+               )
+
+      assert {:authorized, [%Item{owner_id: 1}]} =
+               Permit.Ecto.Resolver.authorize_and_preload_all!(
+                 %User{id: 1},
+                 authorization_module,
+                 Item,
+                 :index,
+                 %{use_loader?: true, loader: fn x -> Item |> Repo.all() end}
                )
     end
   end
