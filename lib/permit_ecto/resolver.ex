@@ -17,6 +17,7 @@ defmodule Permit.Ecto.Resolver do
   import Permit.Helpers, only: [resource_module_from_resource: 1]
 
   @impl Permit.ResolverBase
+
   def resolve(subject, authorization_module, resource_module, action, %{} = meta, :one) do
     %{base_query: base_query} = meta = ensure_meta_defaults(meta)
 
@@ -43,7 +44,7 @@ defmodule Permit.Ecto.Resolver do
                meta
              ) do
           {true, _} -> :unauthorized
-          {false, query} -> raise Ecto.NoResultsError, queryable: query
+          {false, _query} -> :not_found
         end
     end
   end
