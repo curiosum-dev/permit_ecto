@@ -78,39 +78,37 @@ defmodule Permit.Ecto.Permissions do
         actions_module,
         opts \\ %{}
       ) do
-    with {:ok, filter} <- transitive_query(permissions, actions_module, action, resource, subject) do
-      # base_query is (Types.object_or_resource_module() -> Ecto.Query.t())
-      # params = Map.get(opts, :params, %{})
+    resource_module = resource_module_from_resource(resource)
 
-      resource_module = resource_module_from_resource(resource)
+    base_query_fn =
+      Map.get(opts, :base_query, fn %{resource_module: resource_module} ->
+        Ecto.Query.from(_ in resource_module)
+      end)
 
-      base_query =
-        Map.get(opts, :base_query, fn %{resource_module: resource_module} ->
-          Ecto.Query.from(_ in resource_module)
-        end)
+    base_query =
+      %{
+        action: action,
+        resource_module: resource_module,
+        subject: subject
+      }
+      |> Map.merge(opts)
+      |> base_query_fn.()
 
-      ctx =
-        %{
-          action: action,
-          resource_module: resource_module,
-          subject: subject
-        }
-        |> Map.merge(opts)
-
-      ctx
-      |> base_query.()
+    with {:ok, query, filter} <-
+           transitive_query(permissions, actions_module, action, resource, subject, base_query) do
+      query
       |> where(^filter)
       |> then(&{:ok, &1})
     end
   end
 
-  defp transitive_query(permissions, actions_module, action, resource, subject) do
+  defp transitive_query(permissions, actions_module, action, resource, subject, base_query) do
     res_module = resource_module_from_resource(resource)
 
     value_fn = fn action ->
       case Map.get(permissions.conditions_map, {action, res_module}) do
         nil -> {:ok, dynamic(false)}
-        dnf -> DynamicQueryJoiner.to_dynamic_query(dnf, subject, resource)
+        dnf -> DynamicQueryJoiner.to_dynamic_query(dnf, subject, resource, base_query)
       end
     end
 
@@ -153,8 +151,8 @@ defmodule Permit.Ecto.Permissions do
 
   defp conj_queries(:nothing, :nothing), do: :nothing
 
-  defp conj_queries({:ok, query1}, {:ok, query2}),
-    do: {:ok, dynamic(^query1 and ^query2)}
+  defp conj_queries({:ok, query_1}, {:ok, query_2}),
+    do: {:ok, dynamic(^query_1 and ^query_2)}
 
   defp conj_queries({:error, errors}, _),
     do: {:error, errors}
@@ -165,21 +163,27 @@ defmodule Permit.Ecto.Permissions do
   defp conj_queries({:error, err1}, {:error, err2}),
     do: {:error, err1 ++ err2}
 
-  defp disj_queries(:nothing, {:ok, query}), do: {:ok, query}
+  defp disj_queries(:nothing, {:ok, query, conditions_query}), do: {:ok, query, conditions_query}
 
-  defp disj_queries({:ok, query}, :nothing), do: {:ok, query}
+  defp disj_queries({:ok, query, conditions_query}, :nothing), do: {:ok, query, conditions_query}
+
+  defp disj_queries({:ok, conditions_query_1}, {:ok, query, conditions_query_2}),
+    do: {:ok, query, dynamic(^conditions_query_1 or ^conditions_query_2)}
 
   defp disj_queries(:nothing, :nothing), do: :nothing
 
-  defp disj_queries({:ok, query1}, {:ok, query2}),
-    do: {:ok, dynamic(^query1 or ^query2)}
+  defp disj_queries({:ok, query_1, conditions_query_1}, {:ok, query_2, conditions_query_2}) do
+    query = (Enum.empty?(query_1.joins) && query_2) || query_1
 
-  defp disj_queries({:error, errors}, _),
+    {:ok, query, dynamic(^conditions_query_1 or ^conditions_query_2)}
+  end
+
+  defp disj_queries({:error, _query, errors}, _),
     do: {:error, errors}
 
-  defp disj_queries(_, {:error, errors}),
+  defp disj_queries(_, {:error, _query, errors}),
     do: {:error, errors}
 
-  defp disj_queries({:error, err1}, {:error, err2}),
+  defp disj_queries({:error, query, err1}, {:error, query, err2}),
     do: {:error, err1 ++ err2}
 end

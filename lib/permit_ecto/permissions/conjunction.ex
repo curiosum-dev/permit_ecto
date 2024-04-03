@@ -1,5 +1,6 @@
 defmodule Permit.Ecto.Permissions.Conjunction do
   @moduledoc false
+
   import Ecto.Query
 
   alias Permit.Ecto.Permissions.ParsedCondition, as: EctoParsedCondition
@@ -9,15 +10,21 @@ defmodule Permit.Ecto.Permissions.Conjunction do
   @spec to_dynamic_query_expr(
           ParsedConditionList.t(),
           Types.object_or_resource_module(),
-          Types.subject()
+          Types.subject(),
+          Ecto.Query.t()
         ) ::
           {:ok, Ecto.Query.dynamic()} | {:error, keyword()}
-  def to_dynamic_query_expr(%ParsedConditionList{conditions: []}, _, _),
+  def to_dynamic_query_expr(%ParsedConditionList{conditions: []}, _, _, _query),
     do: {:ok, dynamic(false)}
 
-  def to_dynamic_query_expr(%ParsedConditionList{conditions: conditions}, subject, resource) do
+  def to_dynamic_query_expr(
+        %ParsedConditionList{conditions: conditions},
+        subject,
+        resource,
+        query
+      ) do
     conditions
-    |> Enum.map(&EctoParsedCondition.to_dynamic_query(&1, subject, resource))
+    |> Enum.map(&EctoParsedCondition.to_dynamic_query(&1, subject, resource, query))
     |> case do
       [] ->
         {:ok, dynamic(true)}
