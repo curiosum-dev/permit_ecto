@@ -15,17 +15,78 @@ defmodule Permit.Ecto.Permissions.DynamicQueryJoiner do
 
   @spec to_dynamic_query(
           DisjunctiveNormalForm.t(),
+          Types.subject(),
           Types.object_or_resource_module(),
-          Types.subject()
+          Ecto.Query.t()
         ) ::
-          {:ok, Ecto.Query.t()} | {:error, term()}
-  def to_dynamic_query(%DisjunctiveNormalForm{disjunctions: disjunctions}, subject, resource) do
+          {:ok, Ecto.Query.t(), Ecto.Query.t()} | {:error, Ecto.Query.t(), term()}
+  def to_dynamic_query(
+        %DisjunctiveNormalForm{disjunctions: disjunctions},
+        subject,
+        resource,
+        base_query
+      ) do
+    query = construct_query_with_joins(disjunctions, base_query)
+
     disjunctions
-    |> Enum.map(&Conjunction.to_dynamic_query_expr(&1, subject, resource))
+    |> Enum.map(&Conjunction.to_dynamic_query_expr(&1, subject, resource, query))
     |> case do
-      [] -> {:ok, dynamic(false)}
-      li -> Enum.reduce(li, &join_queries/2)
+      [] ->
+        {:ok, query, dynamic(false)}
+
+      conditions ->
+        conditions
+        |> Enum.reduce(&join_queries/2)
+        |> format_response(query)
     end
+  end
+
+  defp extract_assocs(disjunctions) do
+    disjunctions
+    |> Enum.flat_map(& &1.conditions)
+    |> Enum.reduce([], fn condition, acc ->
+      assoc_path = condition.private[:association_path]
+
+      if is_nil(assoc_path) do
+        acc
+      else
+        assoc_path ++ acc
+      end
+    end)
+  end
+
+  defp construct_query_with_joins(disjunctions, base_query) do
+    disjunctions
+    |> extract_assocs()
+    |> add_joins(base_query)
+  end
+
+  def add_joins(joins, base_query) do
+    Enum.reduce(joins, base_query, fn {key, values}, acc ->
+      acc = join(acc, :inner, [p, ...], _ in assoc(p, ^key), as: ^key)
+
+      if is_list(values) do
+        add_join(key, values, acc)
+      end
+    end)
+  end
+
+  defp add_join(root, values, acc) when is_list(values) do
+    Enum.reduce(values, acc, fn assoc, acc ->
+      add_join(root, assoc, acc)
+    end)
+  end
+
+  defp add_join(root, key, acc) when is_atom(key) do
+    binding = "#{root}_#{key}"
+    join(acc, :inner, [{^root, p}], _ in assoc(p, ^key), as: ^binding)
+  end
+
+  defp add_join(root, {key, values}, acc) do
+    binding = "#{root}_#{key}"
+    acc = join(acc, :inner, [{^root, p}], _ in assoc(p, ^key), as: ^binding)
+
+    add_join(binding, values, acc)
   end
 
   #######
@@ -47,4 +108,7 @@ defmodule Permit.Ecto.Permissions.DynamicQueryJoiner do
 
   defp join_queries({:error, es}, {:error, errors}),
     do: {:error, es ++ errors}
+
+  defp format_response({:ok, conditions}, query), do: {:ok, query, conditions}
+  defp format_response({:error, error}, query), do: {:error, query, error}
 end
