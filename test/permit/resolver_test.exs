@@ -46,6 +46,26 @@ defmodule Permit.Ecto.ResolverTest do
   end
 
   describe "authorize_and_preload_all!/5" do
+    test "should return one record based on association" do
+      authorization_module =
+        permissions_module do
+          def can(_user) do
+            permit()
+            |> read(Item, user: [id: 4, permission_level: 4], thread_name: "test")
+          end
+        end
+        |> authorization_module()
+
+      assert {:authorized, [%Item{id: 4}]} =
+               Permit.Ecto.Resolver.authorize_and_preload_all!(
+                 %User{id: 1},
+                 authorization_module,
+                 Item,
+                 :index,
+                 %{}
+               )
+    end
+
     test "retrieves all records if a restricted :all permission is overridden by a general :read permission" do
       authorization_module =
         permissions_module do
@@ -57,7 +77,7 @@ defmodule Permit.Ecto.ResolverTest do
         end
         |> authorization_module()
 
-      assert {:authorized, [%Item{id: 1}, %Item{id: 2}, %Item{id: 3}]} =
+      assert {:authorized, [%Item{id: 1}, %Item{id: 2}, %Item{id: 3}, %Item{id: 4}]} =
                Permit.Ecto.Resolver.authorize_and_preload_all!(
                  %User{id: 1},
                  authorization_module,

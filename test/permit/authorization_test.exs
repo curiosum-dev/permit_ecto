@@ -62,10 +62,10 @@ defmodule Permit.Ecto.AuthorizationTest do
     end
 
     test "should not construct ecto query" do
-      assert {:error, condition_unconvertible: _, condition_unconvertible: _} =
+      assert {:error, _q, condition_unconvertible: _, condition_unconvertible: _} =
                TestAuthorization.accessible_by(@another_one_role, :delete, TestObject)
 
-      assert {:error, condition_unconvertible: %{type: :function_2}} =
+      assert {:error, _q, condition_unconvertible: %{type: :function_2}} =
                TestAuthorization.accessible_by(@manager_role, :delete, TestObject)
     end
   end
