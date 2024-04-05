@@ -111,7 +111,7 @@ defmodule Permit.Permissions.QueryConstructionTest do
 
       result = ConditionParser.build_assoc_path(raw_condition)
 
-      assert result == [user: [{:class, [:type]}, :phone, :address]]
+      assert result == {:user, [:address, :phone, {:class, [:type]}]}
 
       raw_condition =
         {:account,
@@ -138,12 +138,12 @@ defmodule Permit.Permissions.QueryConstructionTest do
 
       result = ConditionParser.build_assoc_path(raw_condition)
 
-      assert result == [
-               account: [
-                 type: [sub_type: [:assoc, address: [:street]]],
-                 balance: [{:test, [test2: [:test3]]}, :currency, :amount]
-               ]
-             ]
+      assert result ==
+               {:account,
+                [
+                  balance: [{:test, [test2: [:test3]]}, :currency, :amount],
+                  type: [sub_type: [:assoc, {:address, [:street]}]]
+                ]}
 
       raw_condition =
         {:book,
@@ -155,9 +155,8 @@ defmodule Permit.Permissions.QueryConstructionTest do
 
       result = ConditionParser.build_assoc_path(raw_condition)
 
-      assert result == [
-               book: [{:user_2, [:class]}, {:user_1, [{:project, [client: [:class]]}, :class]}]
-             ]
+      assert result ==
+               {:book, [{:user_1, [{:project, [client: [:class]]}, :class]}, {:user_2, [:class]}]}
     end
   end
 
