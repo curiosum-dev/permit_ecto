@@ -44,15 +44,7 @@ defmodule Permit.Ecto.Permissions.DynamicQueryJoiner do
   defp extract_assocs(disjunctions) do
     disjunctions
     |> Enum.flat_map(& &1.conditions)
-    |> Enum.reduce([], fn condition, acc ->
-      assoc_path = condition.private[:association_path]
-
-      if is_nil(assoc_path) do
-        acc
-      else
-        assoc_path ++ acc
-      end
-    end)
+    |> Enum.reduce([], &check_assoc_path/2)
   end
 
   defp construct_query_with_joins(disjunctions, base_query) do
@@ -87,6 +79,16 @@ defmodule Permit.Ecto.Permissions.DynamicQueryJoiner do
     acc = join(acc, :inner, [{^root, p}], _ in assoc(p, ^key), as: ^binding)
 
     add_join(binding, values, acc)
+  end
+
+  defp check_assoc_path(condition, acc) do
+    assoc_path = condition.private[:association_path]
+
+    if is_nil(assoc_path) do
+      acc
+    else
+      assoc_path ++ acc
+    end
   end
 
   #######
