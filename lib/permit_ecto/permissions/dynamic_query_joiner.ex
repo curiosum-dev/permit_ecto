@@ -43,7 +43,7 @@ defmodule Permit.Ecto.Permissions.DynamicQueryJoiner do
 
   defp extract_assocs(disjunctions) do
     disjunctions
-    |> Enum.flat_map(& &1.conditions)
+    |> Stream.flat_map(& &1.conditions)
     |> Enum.reduce([], &check_assoc_path/2)
   end
 
