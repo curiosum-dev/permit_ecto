@@ -43,7 +43,7 @@ defmodule Permit.Ecto.Permissions.ParsedCondition do
         },
         subject,
         resource,
-        q
+        query
       ) do
     conditions =
       if is_function(val_fn) do
@@ -52,100 +52,110 @@ defmodule Permit.Ecto.Permissions.ParsedCondition do
         val_fn
       end
 
-    condition = build_dynamic_query({key, conditions}, q)
+    condition = build_dynamic_query({key, conditions}, query)
 
     {:ok, condition}
   end
 
   def to_dynamic_query(
-        %ParsedCondition{condition: {_key, val_fn}, private: %{dynamic_query_fn: query_fn}},
+        %ParsedCondition{
+          condition: {_key, val_fn},
+          private: %{dynamic_query_fn: query_fn}
+        },
         subject,
         resource,
-        _q
+        _query
       ),
       do: val_fn.(subject, resource) |> query_fn.()
 
-  def to_dynamic_query(%ParsedCondition{condition: condition, condition_type: :const}, _, _, _q),
-    do: {:ok, dynamic(^condition)}
+  def to_dynamic_query(
+        %ParsedCondition{condition: condition, condition_type: :const},
+        _subject,
+        _resource,
+        _query
+      ),
+      do: {:ok, dynamic(^condition)}
 
   def to_dynamic_query(
-        %ParsedCondition{condition_type: :function_2, private: %{dynamic_query_fn: query_fn}},
+        %ParsedCondition{
+          condition_type: :function_2,
+          private: %{dynamic_query_fn: query_fn}
+        },
         subject,
         resource,
-        _q
+        _query
       ) do
     query_fn.(subject, resource)
   end
 
   def to_dynamic_query(
-        %ParsedCondition{condition_type: :function_1, private: %{dynamic_query_fn: query_fn}},
+        %ParsedCondition{
+          condition_type: :function_1,
+          private: %{dynamic_query_fn: query_fn}
+        },
         _subject,
         resource,
-        _q
+        _query
       ),
       do: query_fn.(resource)
 
-  defp build_dynamic_query({root, conditions}, q) do
-    conditions
-    |> Enum.reduce(dynamic(true), fn {field, value}, acc ->
+  defp build_dynamic_query({root, conditions}, query) do
+    Enum.reduce(conditions, dynamic(true), fn {field, value}, acc ->
       if Keyword.keyword?(value) do
         Enum.reduce(value, acc, fn {k, v}, acc ->
-          add_condition(root, field, {k, v}, acc, q)
+          add_condition(root, field, {k, v}, acc, query)
         end)
       else
-        n = Map.get(q.aliases, root)
-
-        dynamic([{x, n}], ^acc and field(x, ^field) == ^value)
+        add_single_condition(root, field, value, acc, query)
       end
     end)
   end
 
-  defp add_condition(root, field, {key, v}, acc, q) when is_list(v) do
-    binding =
-      if root == field do
-        "#{field}_#{key}"
-      else
-        "#{root}_#{field}_#{key}"
-      end
+  defp add_condition(root, field, {key, v}, acc, query) when is_list(v) do
+    binding = get_binding(root, field, key)
 
     Enum.reduce(v, acc, fn {k, v}, acc ->
-      add_condition(root, key, binding, {k, v}, acc, q)
+      add_condition(root, key, binding, {k, v}, acc, query)
     end)
   end
 
-  defp add_condition(root, field, {k, v}, acc, q) do
-    binding =
-      if root == field do
-        root
-      else
-        if String.starts_with?(to_string(field), to_string(root)) do
-          field
-        else
-          "#{root}_#{field}"
-        end
-      end
+  defp add_condition(root, field, {key, value}, acc, query) do
+    binding = get_binding(root, field)
 
-    n = Map.get(q.aliases, binding)
-    dynamic([{y, n}], ^acc and field(y, ^k) == ^v)
+    add_single_condition(binding, key, value, acc, query)
   end
 
-  defp add_condition(root, _field, binding, {k, v}, acc, q) when is_list(v) do
-    binding = "#{binding}_#{k}"
-
-    Enum.reduce(v, acc, fn {k, v}, acc ->
-      add_condition(root, binding, {k, v}, acc, q)
+  defp add_condition(root, _field, binding, {key, values}, acc, query) when is_list(values) do
+    Enum.reduce(values, acc, fn {k, v}, acc ->
+      add_condition(root, "#{binding}_#{key}", {k, v}, acc, query)
     end)
   end
 
-  defp add_condition(_root, field, binding, {k, v}, acc, q) do
-    {_binding_name, n} =
-      Enum.find(q.aliases, fn {x, _y} ->
-        case x do
-          x when is_binary(x) -> String.ends_with?(x, binding)
-          x when is_atom(x) -> x == field
-        end
-      end)
+  defp add_condition(_root, field, binding, {_key, value}, acc, query) do
+    add_single_condition(binding, field, value, acc, query)
+  end
 
-    dynamic([{y, n}], ^acc and field(y, ^k) == ^v)
+  defp add_single_condition(binding, field, value, acc, query) do
+    n = Map.get(query.aliases, binding)
+
+    dynamic([{x, n}], ^acc and field(x, ^field) == ^value)
+  end
+
+  defp get_binding(root, field) when root == field, do: field
+
+  defp get_binding(root, field) do
+    if String.starts_with?(to_string(field), to_string(root)) do
+      field
+    else
+      "#{root}_#{field}"
+    end
+  end
+
+  defp get_binding(root, field, key) do
+    if root == field do
+      "#{field}_#{key}"
+    else
+      "#{root}_#{field}_#{key}"
+    end
   end
 end
