@@ -20,82 +20,29 @@ defmodule Permit.Ecto.Permissions.ConditionParser do
     parsed_condition = ConditionParser.build(raw_condition, ops)
 
     private = %{
-      association_path: build_assoc_path(raw_condition),
+      association_path: build_assoc_path(raw_condition) |> List.wrap(),
       dynamic_query_fn: parsed_condition_to_dynamic_query_fn(parsed_condition)
     }
 
     %{parsed_condition | private: private}
   end
 
-  def build_assoc_path({key, values}) when is_list(values) do
+  def build_assoc_path(values) when is_list(values) do
     values
-    |> Enum.reduce([], fn
-      {key, values}, acc when is_list(values) ->
-        acc ++ add_assoc(key, values, acc)
-
-      _condition, acc ->
-        acc
+    |> Enum.reduce([], fn item, acc ->
+      case build_assoc_path(item) do
+        nil -> acc
+        {atom, []} -> [atom | acc]
+        not_nil -> [not_nil | acc]
+      end
     end)
-    |> then(&[{key, &1}])
+  end
+
+  def build_assoc_path({key, values}) when is_list(values) do
+    {key, build_assoc_path(values)}
   end
 
   def build_assoc_path(_conditions), do: nil
-
-  defp add_assoc(root, values, _acc) do
-    Enum.reduce(values, [root], fn
-      {key, values}, acc when is_list(values) ->
-        acc = List.delete(acc, root)
-
-        acc =
-          if Enum.empty?(acc) do
-            [{root, [key]}]
-          else
-            data = [key | get_in(acc, [root])]
-            [{root, data}]
-          end
-
-        add_assoc([root], key, values, acc)
-
-      {_key, _value}, acc ->
-        acc
-    end)
-  end
-
-  defp add_assoc(root, key, values, acc) do
-    Enum.reduce(values, acc, fn
-      {sub_key, sub_values}, acc when is_list(sub_values) ->
-        assoc_key_path = Enum.reverse([key | root])
-
-        if is_nil(get_in(acc, assoc_key_path)) do
-          sub_assocs =
-            acc
-            |> get_in(Enum.reverse(root))
-            |> List.delete(key)
-
-          updated_assocs =
-            if Enum.empty?(sub_assocs) do
-              [{key, [sub_key]}]
-            else
-              sub_assocs
-              |> List.delete(key)
-              |> then(&[{key, [sub_key]} | &1])
-            end
-
-          acc = put_in(acc, Enum.reverse(root), updated_assocs)
-
-          add_assoc([key | root], sub_key, sub_values, acc)
-        else
-          updated_assocs = [sub_key | get_in(acc, assoc_key_path)]
-
-          acc = put_in(acc, assoc_key_path, updated_assocs)
-
-          add_assoc([key | root], sub_key, sub_values, acc)
-        end
-
-      {_sub_key, _sub_value}, acc ->
-        acc
-    end)
-  end
 
   def parsed_condition_to_dynamic_query_fn(%ParsedCondition{
         condition: function,
