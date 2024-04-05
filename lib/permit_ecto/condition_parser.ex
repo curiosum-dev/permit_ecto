@@ -1,9 +1,10 @@
 defmodule Permit.Ecto.Permissions.ConditionParser do
   @moduledoc false
-  alias Permit.Permissions.ConditionParser
-  alias Permit.Permissions.ParsedCondition
 
   import Ecto.Query
+
+  alias Permit.Permissions.ConditionParser
+  alias Permit.Permissions.ParsedCondition
 
   @behaviour Permit.Permissions.ConditionParserBase
 
@@ -16,90 +17,83 @@ defmodule Permit.Ecto.Permissions.ConditionParser do
   end
 
   def build(raw_condition, ops) do
-    ConditionParser.build(raw_condition, ops)
-    |> then(
-      &%{
-        &1
-        | private:
-            Map.merge(&1.private, %{
-              association_path: build_assoc_path(raw_condition),
-              dynamic_query_fn: parsed_condition_to_dynamic_query_fn(&1)
-            })
-      }
-    )
+    parsed_condition = ConditionParser.build(raw_condition, ops)
+
+    private = %{
+      association_path: build_assoc_path(raw_condition),
+      dynamic_query_fn: parsed_condition_to_dynamic_query_fn(parsed_condition)
+    }
+
+    %{parsed_condition | private: private}
   end
 
   def build_assoc_path({key, values}) when is_list(values) do
-    assocs =
-      Enum.reduce(values, [], fn {k, v}, acc ->
-        if is_list(v) do
-          res = add_assoc(k, v, acc)
+    values
+    |> Enum.reduce([], fn
+      {key, values}, acc when is_list(values) ->
+        acc ++ add_assoc(key, values, acc)
 
-          acc ++ res
-        else
-          acc
-        end
-      end)
-
-    [{key, assocs}]
+      _condition, acc ->
+        acc
+    end)
+    |> then(&[{key, &1}])
   end
 
-  def build_assoc_path(_conditions) do
-    nil
-  end
+  def build_assoc_path(_conditions), do: nil
 
   defp add_assoc(root, values, _acc) do
-    acc = [root]
-
-    Enum.reduce(values, acc, fn {k, v}, acc ->
-      if is_list(v) do
+    Enum.reduce(values, [root], fn
+      {key, values}, acc when is_list(values) ->
         acc = List.delete(acc, root)
 
         acc =
           if Enum.empty?(acc) do
-            [{root, [k]}]
+            [{root, [key]}]
           else
-            data = [k | get_in(acc, [root])]
+            data = [key | get_in(acc, [root])]
             [{root, data}]
           end
 
-        add_assoc([root], k, v, acc)
-      else
+        add_assoc([root], key, values, acc)
+
+      {_key, _value}, acc ->
         acc
-      end
     end)
   end
 
   defp add_assoc(root, key, values, acc) do
-    Enum.reduce(values, acc, fn {k, v}, acc ->
-      if is_list(v) do
-        x = get_in(acc, [key | root] |> Enum.reverse())
+    Enum.reduce(values, acc, fn
+      {sub_key, sub_values}, acc when is_list(sub_values) ->
+        assoc_key_path = Enum.reverse([key | root])
 
-        if is_nil(x) do
-          y = get_in(acc, root |> Enum.reverse()) |> List.delete(key)
+        if is_nil(get_in(acc, assoc_key_path)) do
+          sub_assocs =
+            acc
+            |> get_in(Enum.reverse(root))
+            |> List.delete(key)
 
-          data =
-            if Enum.empty?(y) do
-              [{key, [k]}]
+          updated_assocs =
+            if Enum.empty?(sub_assocs) do
+              [{key, [sub_key]}]
             else
-              y
+              sub_assocs
               |> List.delete(key)
-              |> then(&[{key, [k]} | &1])
+              |> then(&[{key, [sub_key]} | &1])
             end
 
-          acc = put_in(acc, root |> Enum.reverse(), data)
+          acc = put_in(acc, Enum.reverse(root), updated_assocs)
 
-          add_assoc([key | root], k, v, acc)
+          add_assoc([key | root], sub_key, sub_values, acc)
         else
-          data = [k | get_in(acc, [key | root] |> Enum.reverse())]
+          updated_assocs = [sub_key | get_in(acc, assoc_key_path)]
 
-          acc = put_in(acc, [key | root] |> Enum.reverse(), data)
+          acc = put_in(acc, assoc_key_path, updated_assocs)
 
-          add_assoc([key | root], k, v, acc)
+          add_assoc([key | root], sub_key, sub_values, acc)
         end
-      else
+
+      {_sub_key, _sub_value}, acc ->
         acc
-      end
     end)
   end
 
