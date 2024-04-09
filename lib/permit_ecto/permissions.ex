@@ -173,7 +173,7 @@ defmodule Permit.Ecto.Permissions do
   defp disj_queries(:nothing, :nothing), do: :nothing
 
   defp disj_queries({:ok, query_1, conditions_query_1}, {:ok, query_2, conditions_query_2}) do
-    query = (Enum.empty?(query_1.joins) && query_2) || query_1
+    query = if Enum.empty?(query_1.joins), do: query_2, else: query_1
 
     {:ok, query, dynamic(^conditions_query_1 or ^conditions_query_2)}
   end
