@@ -76,7 +76,7 @@ defmodule Permit.Permissions.QueryConstructionTest do
       |> Permissions.add(:read, Resource, ~q/[fn res -> res.foo > 0 and res.bar < 100 end]/)
       |> Permissions.add(:create, Resource, ~q/[fn res -> res.foo * res.bar < 10 or true end]/)
 
-    query_with_accosc =
+    query_with_assocs =
       Permissions.new()
       |> Permissions.add(
         :delete,
@@ -93,7 +93,7 @@ defmodule Permit.Permissions.QueryConstructionTest do
       convertible_function: query_convertible_function,
       nonconvertible: query_nonconvertible,
       actions_module: Permit.Actions.CrudActions,
-      with_assocs: query_with_accosc,
+      with_assocs: query_with_assocs,
       subject: nil
     }
   end
