@@ -55,7 +55,7 @@ defmodule Permit.Ecto.Permissions.DynamicQueryJoiner do
 
   def add_joins(joins, base_query) do
     Enum.reduce(joins, base_query, fn {key, values}, acc ->
-      acc = join(acc, :inner, [p, ...], _ in assoc(p, ^key), as: ^key)
+      acc = join(acc, :left, [p, ...], _ in assoc(p, ^key), as: ^key)
 
       if is_list(values) do
         add_join(key, values, acc)
