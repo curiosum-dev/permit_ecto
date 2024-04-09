@@ -49,16 +49,29 @@ defmodule Permit.Ecto.ResolverTest do
     test "should return one record based on association" do
       authorization_module =
         permissions_module do
-          def can(_user) do
+          def can(%{id: 1} = _user) do
             permit()
             |> read(Item, user: [id: 4, permission_level: 4], thread_name: "test")
+            |> read(Item, item_metadata: [text: "Item 2"])
+            |> read(Item, reviews: [accepted: true])
           end
+
+          def can(_user), do: permit()
         end
         |> authorization_module()
 
-      assert {:authorized, [%Item{id: 4}]} =
+      assert {:authorized, [%Item{id: 1}, %Item{id: 2}, %Item{id: 4}]} =
                Permit.Ecto.Resolver.authorize_and_preload_all!(
                  %User{id: 1},
+                 authorization_module,
+                 Item,
+                 :index,
+                 %{}
+               )
+
+      assert :unauthorized =
+               Permit.Ecto.Resolver.authorize_and_preload_all!(
+                 %User{id: 2},
                  authorization_module,
                  Item,
                  :index,

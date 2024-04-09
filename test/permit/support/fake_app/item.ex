@@ -9,6 +9,9 @@ defmodule Permit.FakeApp.Item do
 
     belongs_to(:user, Permit.FakeApp.User, foreign_key: :owner_id)
 
+    has_one(:item_metadata, Permit.FakeApp.ItemMetadata)
+    has_many(:reviews, Permit.FakeApp.Review)
+
     timestamps()
   end
 
