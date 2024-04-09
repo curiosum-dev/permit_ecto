@@ -17,6 +17,39 @@ defmodule Permit.Ecto.Resolver do
   import Permit.Helpers, only: [resource_module_from_resource: 1]
 
   @impl Permit.ResolverBase
+  def resolve(
+        subject,
+        authorization_module,
+        resource_module,
+        action,
+        %{use_loader?: true} = meta,
+        _
+      ) do
+    params_for_loader = %{
+      action: action,
+      resource_module: resource_module,
+      subject: subject,
+      params: meta[:params]
+    }
+
+    with {_, true} <-
+           {:pre_auth, authorized?(subject, authorization_module, resource_module, action)},
+         resource <- meta[:loader].(params_for_loader),
+         {:auth, resource, true} <-
+           check_authorized(resource, subject, authorization_module, action) do
+      {:authorized, resource}
+    else
+      {:pre_auth, false} ->
+        :unauthorized
+
+      {:auth, _, false} ->
+        :unauthorized
+
+      nil ->
+        raise Ecto.NoResultsError
+    end
+  end
+
   def resolve(subject, authorization_module, resource_module, action, %{} = meta, :one) do
     %{base_query: base_query} = meta = ensure_meta_defaults(meta)
 
@@ -91,5 +124,23 @@ defmodule Permit.Ecto.Resolver do
          query <- base_query.(resolution_context) do
       {authorization_module.repo.exists?(query), query}
     end
+  end
+
+  defp check_authorized(resources, subject, authorization_module, action)
+       when is_list(resources) do
+    resources =
+      Enum.reduce(resources, [], fn resource, acc ->
+        if authorized?(subject, authorization_module, resource, action) do
+          [resource | acc]
+        else
+          acc
+        end
+      end)
+
+    {:auth, resources, true}
+  end
+
+  defp check_authorized(resource, subject, authorization_module, action) do
+    {:auth, resource, authorized?(subject, authorization_module, resource, action)}
   end
 end
