@@ -25,6 +25,23 @@ defmodule Permit.Ecto.Permissions do
   end
   ```
 
+  ## Associations
+
+  Conditions can be also defined for values of columns of associated records in `belongs_to`,
+  `has_one` and `has_many` associations. Generated queries will automatically include appropriate
+  joins for associated tables recursively.
+
+  ### Example
+
+  ```
+  def can(user) do
+    permit()
+    |> read(Article, reviews: [approved: true]) # has_many association - any review is approved
+    |> read(Article, settings: [visible: true]) # has_one association - if settings.visible is true
+    |> read(Article, author: [region: [code: user.region_code]]) # belongs_to association, recursive
+  end
+  ```
+
   ## Condition conversion
 
   Conditions defined using standard operators such as equality, inequality, greater-than, less-than,
