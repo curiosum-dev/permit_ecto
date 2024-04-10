@@ -27,9 +27,16 @@ defmodule MyApp.Permissions do
   end
 
   def can(%{id: user_id} = user) do
+    # Checks can be performed directly for record columns as well as associated
+    # record values in has_one, has_many and belongs_to associations.
+    #
+    # For has_one and belongs_to relationships, given condition must be satisfied
+    # for the associated record. For has_many relationships, at least one associated
+    # record must satisfy the condition - as seen in example below.
+
     permit()
     |> all(MyApp.Blog.Article, author_id: user_id)
-    |> read(MyApp.Blog.Article)
+    |> read(MyApp.Blog.Article, reviews: [approved: true])
   end
 
   def can(user), do: permit()
