@@ -50,7 +50,7 @@ defmodule Permit.Ecto.Permissions.DynamicQueryJoiner do
   defp construct_query_with_joins(disjunctions, base_query) do
     disjunctions
     |> extract_assocs()
-    |> add_joins(base_query)
+    |> add_joins(from(q in base_query))
   end
 
   def add_joins(joins, base_query) do
@@ -112,5 +112,6 @@ defmodule Permit.Ecto.Permissions.DynamicQueryJoiner do
     do: {:error, es ++ errors}
 
   defp format_response({:ok, conditions}, query), do: {:ok, query, conditions}
+
   defp format_response({:error, error}, query), do: {:error, query, error}
 end
