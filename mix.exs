@@ -44,9 +44,9 @@ defmodule Permit.Ecto.MixProject do
   defp deps do
     [
       {:permit, "~> 0.2"},
-      {:ecto, "~> 3.0"},
-      {:ecto_sql, "~> 3.0"},
-      {:postgrex, "~> 0.15.13", only: :test},
+      {:ecto, ">= 3.11.2 and < 4.0.0"},
+      {:ecto_sql, ">= 3.11.0"},
+      {:postgrex, "~> 0.16", only: :test},
       {:jason, "~> 1.3", only: [:dev, :test]},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},
