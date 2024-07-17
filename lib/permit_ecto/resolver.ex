@@ -90,7 +90,7 @@ defmodule Permit.Ecto.Resolver do
          resolution_context <-
            Map.merge(%{action: action, resource_module: module, subject: subject}, meta),
          query <- base_query.(resolution_context) do
-      {authorization_module.repo.exists?(query), query}
+      {authorization_module.repo().exists?(query), query}
     end
   end
 end

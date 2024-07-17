@@ -26,7 +26,7 @@ defmodule Permit.FakeApp.Repo do
       %ItemMetadata{id: 3, item_id: 3, text: "Item 3"} |> Repo.insert()
     ]
 
-    reviews = [
+    _reviews = [
       %Review{user_id: 1, item_id: 1, accepted: true} |> Repo.insert(),
       %Review{user_id: 2, item_id: 1, accepted: false} |> Repo.insert(),
       %Review{user_id: 3, item_id: 2, accepted: false} |> Repo.insert()
