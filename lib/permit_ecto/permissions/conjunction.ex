@@ -13,7 +13,7 @@ defmodule Permit.Ecto.Permissions.Conjunction do
           Types.subject(),
           Ecto.Query.t()
         ) ::
-          {:ok, Ecto.Query.dynamic()} | {:error, keyword()}
+          {:ok, Ecto.Query.dynamic_expr()} | {:error, keyword()}
   def to_dynamic_query_expr(%ParsedConditionList{conditions: []}, _, _, _query),
     do: {:ok, dynamic(false)}
 

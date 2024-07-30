@@ -1,4 +1,4 @@
-defmodule Permit.EctoFakeApp.Repo.Migrations.CreateItemTable do
+defmodule Permit.EctoFakeApp.Repo.Migrations.CreateReviewsTable do
   use Ecto.Migration
 
   def change do
