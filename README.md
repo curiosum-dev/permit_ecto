@@ -1,11 +1,16 @@
 # Permit.Ecto
 
+[![Hex version badge](https://img.shields.io/hexpm/v/permit_ecto.svg)](https://hex.pm/packages/permit_ecto)
+[![Actions Status](https://github.com/curiosum-dev/permit_ecto/actions/workflows/elixir.yml/badge.svg)](https://github.com/curiosum-dev/permit_ecto/actions)
+[![Code coverage badge](https://img.shields.io/codecov/c/github/curiosum-dev/permit_ecto/master.svg)](https://codecov.io/gh/curiosum-dev/permit_ecto/branch/master)
+[![License badge](https://img.shields.io/hexpm/l/permit_ecto.svg)](https://github.com/curiosum-dev/_ecto/blob/master/LICENSE.md)
+
 Integrates [`Permit`](https://github.com/curiosum-dev/permit) with Ecto, providing means to convert permissions to Ecto queries,
 automatically constructing `Ecto.Query` scopes to preload records that meet authorization criteria.
 
 ## Dependencies and related libraries
 
-`Permit.Ecto` depends on `Permit`. It can be used to build custom integrations or in conjunction with `Permit.Phoenix`, which uses
+`Permit.Ecto` depends on `Permit`. It can be used to build custom integrations or in conjunction with `Permit.Phoenix`, which usespermit
 the generated `accessible_by/4` functions to automatically preload, authorize and inject records loaded via Ecto into
 controller assigns (see more in [`Permit.Phoenix documentation`](https://github.com/curiosum-dev/permit_phoenix)).
 
@@ -69,7 +74,7 @@ The package can be installed by adding `permit_ecto` to your list of dependencie
 ```elixir
 def deps do
   [
-    {:permit_ecto, "~> 0.1.0"}
+    {:permit_ecto, "~> 0.2.2"}
   ]
 end
 ```
