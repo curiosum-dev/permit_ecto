@@ -16,7 +16,15 @@ defmodule Permit.Ecto.MixProject do
       description: "Ecto integration for the Permit authorization library.",
       package: package(),
       dialyzer: [plt_add_apps: [:ex_unit]],
-      docs: docs()
+      docs: docs(),
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test,
+        "coveralls.json": :test
+      ]
     ]
   end
 
@@ -50,7 +58,10 @@ defmodule Permit.Ecto.MixProject do
       {:jason, "~> 1.3", only: [:dev, :test]},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:versioce, "~> 2.0.0", only: [:dev, :test], runtime: false},
+      {:git_cli, "~> 0.3.0", only: [:dev, :test], runtime: false},
+      {:excoveralls, "~> 0.18", only: :test, runtime: false}
     ]
   end
 
