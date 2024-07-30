@@ -34,7 +34,7 @@ defmodule Permit.Ecto.Permissions.ParsedCondition do
           Types.subject(),
           Ecto.Query.t()
         ) ::
-          {:ok, Ecto.Query.dynamic()} | {:error, term()}
+          {:ok, Ecto.Query.dynamic_expr()} | {:error, term()}
 
   def to_dynamic_query(
         %ParsedCondition{
@@ -100,15 +100,23 @@ defmodule Permit.Ecto.Permissions.ParsedCondition do
       do: query_fn.(resource)
 
   defp build_dynamic_query({root, conditions}, query) do
-    Enum.reduce(conditions, dynamic(true), fn {field, value}, acc ->
-      if Keyword.keyword?(value) do
-        Enum.reduce(value, acc, fn {k, v}, acc ->
-          add_condition(root, field, {k, v}, acc, query)
-        end)
-      else
-        add_single_condition(root, field, value, acc, query)
+    Enum.reduce(
+      conditions,
+      dynamic(true),
+      fn {field, value}, acc ->
+        add_conditions(root, field, value, acc, query)
       end
-    end)
+    )
+  end
+
+  defp add_conditions(root, field, keyword_or_value, acc, query) do
+    if Keyword.keyword?(keyword_or_value) do
+      Enum.reduce(keyword_or_value, acc, fn {k, v}, acc ->
+        add_condition(root, field, {k, v}, acc, query)
+      end)
+    else
+      add_single_condition(root, field, keyword_or_value, acc, query)
+    end
   end
 
   defp add_condition(root, field, {key, v}, acc, query) when is_list(v) do
