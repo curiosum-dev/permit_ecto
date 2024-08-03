@@ -2,7 +2,7 @@ defmodule Permit.Ecto.MixProject do
   @moduledoc false
   use Mix.Project
 
-  @version "0.2.2"
+  @version "0.2.3"
   @source_url "https://github.com/curiosum-dev/permit_ecto"
 
   def project do

@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 * This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
+
+## [v0.2.3]
 ### Fixed
 - Fix `Ecto.Query.dynamic_expr()` type naming after Ecto version upgrade.
 - Fix any other issues indicated by Credo and Dialyzer (#19).

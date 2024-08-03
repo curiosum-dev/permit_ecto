@@ -74,7 +74,7 @@ The package can be installed by adding `permit_ecto` to your list of dependencie
 ```elixir
 def deps do
   [
-    {:permit_ecto, "~> 0.2.2"}
+    {:permit_ecto, "~> 0.2.3"}
   ]
 end
 ```
