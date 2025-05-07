@@ -44,13 +44,13 @@ defmodule Permit.Ecto do
 
   # The `accessible_by!/3` function also has a `accessible_by/3` variant which returns `{:ok, ...}` tuples.
 
-  iex> MyApp.Permissions.accessible_by!(%MyApp.Users.User{id: 1}, :update, MyApp.Blog.Article)
+  iex> MyApp.Authorization.accessible_by!(%MyApp.Users.User{id: 1}, :update, MyApp.Blog.Article)
   [%MyApp.Blog.Article{id: 1, ...}, %MyApp.Blog.Article{id: 2, ...}]
 
-  iex> MyApp.Permissions.accessible_by!(%MyApp.Users.User{id: 1}, :read, MyApp.Blog.Article)
+  iex> MyApp.Authorization.accessible_by!(%MyApp.Users.User{id: 1}, :read, MyApp.Blog.Article)
   [%MyApp.Blog.Article{id: 1, ...}, %MyApp.Blog.Article{id: 2, ...}, %MyApp.Blog.Article{id: 3, ...}]
 
-  iex> MyApp.Permissions.accessible_by!(%MyApp.Users.User{id: 3, role: :admin}, :update, MyApp.Blog.Article)
+  iex> MyApp.Authorization.accessible_by!(%MyApp.Users.User{id: 3, role: :admin}, :update, MyApp.Blog.Article)
   [%MyApp.Blog.Article{id: 1, ...}, %MyApp.Blog.Article{id: 2, ...}, %MyApp.Blog.Article{id: 3, ...}]
   ```
   """
