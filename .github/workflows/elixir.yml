@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     strategy:
+      fail-fast: false
       matrix:
         elixir_version: ['1.12', '1.13', '1.14', '1.15', '1.16', '1.17']
         otp_version: ['24', '25', '26', '27']
