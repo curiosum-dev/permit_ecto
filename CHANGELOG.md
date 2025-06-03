@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v0.2.4]
 ### Fixed
 - Fix docs and readme: link typo, examples of `accessible_by` usage.
 - Updated dependencies.
