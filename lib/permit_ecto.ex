@@ -44,13 +44,13 @@ defmodule Permit.Ecto do
 
   # The `accessible_by!/3` function also has a `accessible_by/3` variant which returns `{:ok, ...}` tuples.
 
-  iex> MyApp.Permissions.accessible_by!(%MyApp.Users.User{id: 1}, :update, MyApp.Blog.Article)
+  iex> MyApp.Permissions.accessible_by!(%MyApp.Users.User{id: 1}, :update, MyApp.Blog.Article) |> MyApp.Repo.all()
   [%MyApp.Blog.Article{id: 1, ...}, %MyApp.Blog.Article{id: 2, ...}]
 
-  iex> MyApp.Permissions.accessible_by!(%MyApp.Users.User{id: 1}, :read, MyApp.Blog.Article)
+  iex> MyApp.Permissions.accessible_by!(%MyApp.Users.User{id: 1}, :read, MyApp.Blog.Article) |> MyApp.Repo.all()
   [%MyApp.Blog.Article{id: 1, ...}, %MyApp.Blog.Article{id: 2, ...}, %MyApp.Blog.Article{id: 3, ...}]
 
-  iex> MyApp.Permissions.accessible_by!(%MyApp.Users.User{id: 3, role: :admin}, :update, MyApp.Blog.Article)
+  iex> MyApp.Permissions.accessible_by!(%MyApp.Users.User{id: 3, role: :admin}, :update, MyApp.Blog.Article) |> MyApp.Repo.all()
   [%MyApp.Blog.Article{id: 1, ...}, %MyApp.Blog.Article{id: 2, ...}, %MyApp.Blog.Article{id: 3, ...}]
   ```
   """
@@ -70,6 +70,34 @@ defmodule Permit.Ecto do
       @spec repo() :: Ecto.Repo.t()
       def repo, do: unquote(opts[:repo])
 
+      @doc """
+      Returns an Ecto query that filters resources based on the current user's permissions
+      for the given action.
+
+      This function constructs an Ecto query that only includes records the user is authorized
+      to access based on their permissions. It returns a tuple with `:ok` and the query on
+      success, or `:error` with details on failure.
+
+      ## Parameters
+
+      - `current_user` - The subject (user) whose permissions should be checked
+      - `action` - The action being performed (e.g., `:read`, `:update`, `:delete`)
+      - `resource` - The resource module or struct being accessed
+      - `opts` - Optional configuration map with keys:
+        - `:base_query` - Optional function to generate the base query (Permit.Ecto.Types.base_query())
+
+      ## Returns
+
+      - `{:ok, Ecto.Query.t()}` - Success with the filtered query
+      - `{:error, {:undefined_condition, key}}` - When a condition key is undefined
+      - `{:error, {:condition_unconvertible, details}}` - When conditions cannot be converted to Ecto queries
+
+      ## Example
+
+          iex> MyApp.Authorization.accessible_by(user, :update, MyApp.Blog.Article)
+          {:ok, #Ecto.Query<from a0 in MyApp.Blog.Article, where: a0.author_id == ^1>}
+
+      """
       @spec accessible_by(
               Types.subject(),
               Types.action_group(),
@@ -78,7 +106,6 @@ defmodule Permit.Ecto do
             ) ::
               {:ok, Ecto.Query.t()} | {:error, term()}
       def accessible_by(current_user, action, resource, opts \\ %{}) do
-        # base_query is (Types.object_or_resource_module() -> Ecto.Query.t())
         opts =
           opts
           |> Map.put_new(:params, %{})
@@ -98,6 +125,35 @@ defmodule Permit.Ecto do
         )
       end
 
+      @doc """
+      Returns an Ecto query that filters resources based on the current user's permissions
+      for the given action, raising an exception on failure.
+
+      This is the bang variant of `accessible_by/4`. It returns the query directly on success
+      but raises an exception if the permissions cannot be converted to a valid Ecto query.
+
+      ## Parameters
+
+      - `current_user` - The subject (user) whose permissions should be checked
+      - `action` - The action being performed (e.g., `:read`, `:update`, `:delete`)
+      - `resource` - The resource module or struct being accessed
+      - `opts` - Optional configuration map (same as `accessible_by/4`)
+
+      ## Returns
+
+      - `Ecto.Query.t()` - The filtered query on success
+
+      ## Raises
+
+      - `Permit.Ecto.UndefinedConditionError` - When a condition key is undefined
+      - `Permit.Ecto.UnconvertibleConditionError` - When conditions cannot be converted
+
+      ## Example
+
+          iex> MyApp.Authorization.accessible_by!(user, :update, MyApp.Blog.Article)
+          #Ecto.Query<from a0 in MyApp.Blog.Article, where: a0.author_id == ^1>
+
+      """
       @spec accessible_by!(
               Types.subject(),
               Types.action_group(),
