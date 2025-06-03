@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- Fix docs and readme: link typo, examples of `accessible_by` usage.
+- Updated dependencies.
+
 ## [v0.2.3]
 ### Fixed
 - Fix `Ecto.Query.dynamic_expr()` type naming after Ecto version upgrade.
