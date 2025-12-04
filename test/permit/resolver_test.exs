@@ -79,6 +79,32 @@ defmodule Permit.Ecto.ResolverTest do
                )
     end
 
+    test "read?/2 should return false when has_many association is empty" do
+      authorization_module =
+        permissions_module do
+          def can(user) do
+            permit()
+            |> read(Item, owner_id: user.id, reviews: [user_id: user.id])
+          end
+        end
+        |> authorization_module()
+
+      # authorize_and_preload_all!/5 correctly returns empty list
+      # because user 3 owns item 3, but it has no reviews matching the criteria
+      assert {:authorized, []} =
+               Permit.Ecto.Resolver.authorize_and_preload_all!(
+                 %User{id: 3},
+                 authorization_module,
+                 Item,
+                 :read,
+                 %{}
+               )
+
+      item_3 = Repo.get(Item, 3) |> Repo.preload(:reviews)
+      # read?/2 should also return false for the same reason
+      refute authorization_module.can(%User{id: 3}) |> authorization_module.read?(item_3)
+    end
+
     test "retrieves all records if a restricted :all permission is overridden by a general :read permission" do
       authorization_module =
         permissions_module do
