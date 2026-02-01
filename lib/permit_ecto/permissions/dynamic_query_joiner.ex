@@ -45,6 +45,25 @@ defmodule Permit.Ecto.Permissions.DynamicQueryJoiner do
     disjunctions
     |> Stream.flat_map(& &1.conditions)
     |> Enum.reduce([], &check_assoc_path/2)
+    |> deduplicate_assoc_paths()
+  end
+
+  defp deduplicate_assoc_paths(assoc_paths) do
+    assoc_paths
+    |> Enum.reverse()
+    |> Enum.uniq_by(&normalize_assoc_key/1)
+  end
+
+  defp normalize_assoc_key({key, values}) when is_list(values) do
+    {key, normalize_assoc_values(values)}
+  end
+
+  defp normalize_assoc_key(key) when is_atom(key), do: key
+
+  defp normalize_assoc_values(values) do
+    values
+    |> Enum.map(&normalize_assoc_key/1)
+    |> Enum.sort()
   end
 
   defp construct_query_with_joins(disjunctions, base_query) do

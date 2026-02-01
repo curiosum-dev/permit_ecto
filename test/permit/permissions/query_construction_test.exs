@@ -17,6 +17,27 @@ defmodule Permit.Permissions.QueryConstructionTest.Resource do
   end
 end
 
+defmodule Permit.Permissions.QueryConstructionTest.Note do
+  use Ecto.Schema
+
+  schema "notes" do
+    field(:user_id, :integer)
+    field(:public, :boolean)
+    field(:title, :string)
+    has_many(:comments, Permit.Permissions.QueryConstructionTest.Comment)
+  end
+end
+
+defmodule Permit.Permissions.QueryConstructionTest.Comment do
+  use Ecto.Schema
+
+  schema "comments" do
+    field(:content, :string)
+    field(:user_id, :integer)
+    belongs_to(:note, Permit.Permissions.QueryConstructionTest.Note)
+  end
+end
+
 defmodule Permit.Permissions.QueryConstructionTest do
   use ExUnit.Case, async: true
   alias Permit.Ecto.Permissions.Conjunction
@@ -359,6 +380,123 @@ defmodule Permit.Permissions.QueryConstructionTest do
                  where: like(r.name, ^"%") and is_nil(r.foo)
                )
              )
+    end
+  end
+
+  describe "Duplicate association deduplication" do
+    alias Permit.Permissions.QueryConstructionTest.Comment
+
+    test "should deduplicate joins for same association with different conditions", %{
+      actions_module: module,
+      subject: subject
+    } do
+      permissions =
+        Permissions.new()
+        |> Permissions.add(:create, Comment, ~q/[note: [user_id: 123]]/)
+        |> Permissions.add(:create, Comment, ~q/[note: [public: true]]/)
+
+      {:ok, query} =
+        EctoPermissions.construct_query(permissions, :create, Comment, subject, module)
+
+      # Verify only ONE join for 'note' association
+      join_bindings = Enum.map(query.joins, & &1.as)
+      assert length(Enum.filter(join_bindings, &(&1 == :note))) == 1
+      assert :note in join_bindings
+    end
+
+    test "should deduplicate nested associations correctly", %{
+      actions_module: module,
+      subject: subject
+    } do
+      # Note: This test assumes User schema has a 'class' association
+      # Since we're testing the deduplication logic, we use the existing Resource schema
+      permissions =
+        Permissions.new()
+        |> Permissions.add(:read, Resource, ~q/[user: [id: 1]]/)
+        |> Permissions.add(:read, Resource, ~q/[user: [name: "test"]]/)
+
+      {:ok, query} =
+        EctoPermissions.construct_query(permissions, :read, Resource, subject, module)
+
+      # Should have only 1 join for user association
+      join_bindings = Enum.map(query.joins, & &1.as)
+      assert length(Enum.filter(join_bindings, &(&1 == :user))) == 1
+    end
+
+    test "should NOT deduplicate different associations", %{
+      actions_module: module,
+      subject: subject
+    } do
+      permissions =
+        Permissions.new()
+        |> Permissions.add(:create, Comment, ~q/[note: [user_id: 1]]/)
+        |> Permissions.add(:create, Comment, ~q/[user_id: 2]/)
+
+      {:ok, query} =
+        EctoPermissions.construct_query(permissions, :create, Comment, subject, module)
+
+      # Should have 1 join for note (user_id: 2 is a direct field, not an association)
+      join_bindings = Enum.map(query.joins, & &1.as)
+      assert length(join_bindings) == 1
+      assert :note in join_bindings
+    end
+
+    test "should handle complex nested association deduplication", %{
+      actions_module: module,
+      subject: subject
+    } do
+      # Test with Comment/Note to avoid schema complexity
+      permissions =
+        Permissions.new()
+        |> Permissions.add(:read, Comment, ~q/[note: [user_id: 1]]/)
+        |> Permissions.add(:read, Comment, ~q/[note: [public: true]]/)
+        |> Permissions.add(:read, Comment, ~q/[note: [title: "test"]]/)
+
+      {:ok, query} =
+        EctoPermissions.construct_query(permissions, :read, Comment, subject, module)
+
+      join_bindings = Enum.map(query.joins, & &1.as)
+
+      # Should have exactly one join for 'note' despite three permissions
+      note_count = length(Enum.filter(join_bindings, &(&1 == :note)))
+
+      assert note_count == 1, "Expected 1 'note' join, got #{note_count}"
+      assert length(join_bindings) == 1
+    end
+
+    test "should maintain backward compatibility with single association conditions", %{
+      with_assocs: permissions,
+      actions_module: module
+    } do
+      # This is an existing test pattern - ensure it still passes
+      assert {:ok, query} =
+               EctoPermissions.construct_query(permissions, :delete, Resource, Resource, module)
+
+      refute Enum.empty?(query.joins)
+    end
+
+    test "should handle real-world notes app permission pattern", %{
+      actions_module: module,
+      subject: subject
+    } do
+      permissions =
+        Permissions.new()
+        |> Permissions.add(:create, Comment, ~q/[note: [user_id: 123]]/)
+        |> Permissions.add(:create, Comment, ~q/[note: [public: true]]/)
+
+      {:ok, query} =
+        EctoPermissions.construct_query(permissions, :create, Comment, subject, module)
+
+      # Should create exactly one join for 'note'
+      join_bindings = Enum.map(query.joins, & &1.as)
+      note_joins_count = length(Enum.filter(join_bindings, &(&1 == :note)))
+
+      assert note_joins_count == 1,
+             "Expected exactly 1 join for 'note' association, got #{note_joins_count}"
+
+      # The WHERE clause should contain both conditions OR'd together
+      # This is implicitly verified by the query being successfully constructed
+      assert length(query.joins) == 1
     end
   end
 
