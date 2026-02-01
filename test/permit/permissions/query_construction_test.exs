@@ -404,6 +404,24 @@ defmodule Permit.Permissions.QueryConstructionTest do
       assert :note in join_bindings
     end
 
+    test "should use OR WHERE for multiple nested conditions using the same join", %{
+      actions_module: module,
+      subject: subject
+    } do
+      permissions =
+        Permissions.new()
+        |> Permissions.add(:create, Comment, ~q/[note: [user_id: 123]]/)
+        |> Permissions.add(:create, Comment, ~q/[note: [public: true]]/)
+
+      {:ok, query} =
+        EctoPermissions.construct_query(permissions, :create, Comment, subject, module)
+
+      {sql, bind_vars} = Ecto.Adapters.SQL.to_sql(:all, Permit.FakeApp.Repo, query)
+
+      assert sql =~ ~r/.+WHERE.+"public" = .+OR.+"user_id" = .+/
+      assert bind_vars == [true, 123]
+    end
+
     test "should deduplicate nested associations correctly", %{
       actions_module: module,
       subject: subject
