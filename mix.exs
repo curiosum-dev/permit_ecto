@@ -55,7 +55,7 @@ defmodule Permit.Ecto.MixProject do
       {:ecto, ">= 3.11.2 and < 4.0.0"},
       {:ecto_sql, ">= 3.11.0"},
       {:postgrex, "~> 0.16", only: :test},
-      {:jason, "~> 1.3", only: [:dev, :test]},
+      {:jason, "~> 1.3"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
@@ -63,7 +63,15 @@ defmodule Permit.Ecto.MixProject do
       {:git_cli, "~> 0.3.0", only: [:dev, :test], runtime: false},
       {:excoveralls, "~> 0.18", only: :test, runtime: false},
       {:castore, "~> 1.0", only: :test, runtime: false}
-    ]
+    ] ++ igniter_dep()
+  end
+
+  defp igniter_dep do
+    if Version.match?(System.version(), ">= 1.15.0") do
+      [{:igniter, "~> 0.5", optional: true}]
+    else
+      []
+    end
   end
 
   defp docs do
