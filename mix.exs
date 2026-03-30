@@ -15,7 +15,7 @@ defmodule Permit.Ecto.MixProject do
       deps: deps(),
       description: "Ecto integration for the Permit authorization library.",
       package: package(),
-      dialyzer: [plt_add_apps: [:ex_unit]],
+      dialyzer: [plt_add_apps: [:ex_unit, :mix]],
       docs: docs(),
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [

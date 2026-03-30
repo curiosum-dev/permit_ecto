@@ -1,4 +1,4 @@
-if Code.ensure_loaded?(Igniter) do
+if Version.match?(System.version(), ">= 1.15.0") and Code.ensure_loaded?(Igniter) do
   defmodule Mix.Tasks.PermitEcto.Install do
     @shortdoc "Installs Permit.Ecto authorization into your project"
 
@@ -131,21 +131,6 @@ if Code.ensure_loaded?(Igniter) do
       string
       |> String.split(".")
       |> Module.concat()
-    end
-  end
-else
-  defmodule Mix.Tasks.PermitEcto.Install do
-    @shortdoc "Installs Permit.Ecto authorization into your project"
-    @moduledoc "Installs Permit.Ecto authorization into your project. Requires the `igniter` package."
-
-    use Mix.Task
-
-    def run(_argv) do
-      Mix.shell().error("""
-      The `permit_ecto.install` task requires the `igniter` package.
-
-      Please add `{:igniter, "~> 0.5"}` to your dependencies and run `mix deps.get`.
-      """)
     end
   end
 end
