@@ -114,6 +114,36 @@ Permit.Ecto is part of the modular Permit ecosystem:
 
 ## Installation
 
+### Using Igniter (recommended)
+
+If you use [Igniter](https://hex.pm/packages/igniter) for project setup, add `permit_ecto` and `igniter` to your deps and run:
+
+```bash
+mix permit_ecto.install
+```
+
+This creates your `Authorization` and `Authorization.Permissions` modules pre configured for Ecto.
+
+**Options:**
+
+| Option | Description | Default |
+|---|---|---|
+| `--authorization-module` | Authorization module name | `<MyApp>.Authorization` |
+| `--permissions-module` | Permissions module name | `<MyApp>.Authorization.Permissions` |
+| `--actions-module` | Actions module to use | `Permit.Actions.CrudActions` |
+| `--repo` | Ecto repo module | auto-detected |
+
+Example with options:
+
+```bash
+mix permit_ecto.install \
+  --authorization-module MyApp.Auth \
+  --permissions-module MyApp.Auth.Permissions \
+  --repo MyApp.Repo
+```
+
+### Manual installation
+
 The package can be installed by adding `permit_ecto` to your list of dependencies in `mix.exs`:
 
 ```elixir
@@ -122,6 +152,22 @@ def deps do
     {:permit, "~> 0.3.0"},        # Core authorization library
     {:permit_ecto, "~> 0.2.4"}    # Ecto integration
   ]
+end
+```
+
+Then create your authorization module:
+
+```elixir
+defmodule MyApp.Authorization do
+  use Permit.Ecto,
+    permissions_module: MyApp.Authorization.Permissions,
+    repo: MyApp.Repo
+end
+
+defmodule MyApp.Authorization.Permissions do
+  use Permit.Ecto.Permissions, actions_module: Permit.Actions.CrudActions
+
+  def can(_user), do: permit()
 end
 ```
 
