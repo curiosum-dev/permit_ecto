@@ -20,6 +20,7 @@ if Version.match?(System.version(), ">= 1.15.0") and Code.ensure_loaded?(Igniter
 
     use Igniter.Mix.Task
 
+    alias Igniter.Libs.Ecto, as: IgniterEcto
     alias Igniter.Project.Module, as: ProjectModule
 
     @impl Igniter.Mix.Task
@@ -96,8 +97,8 @@ if Version.match?(System.version(), ">= 1.15.0") and Code.ensure_loaded?(Igniter
     end
 
     defp detect_repo(igniter, nil) do
-      if Code.ensure_loaded?(Igniter.Libs.Ecto) do
-        {igniter, repos} = Igniter.Libs.Ecto.list_repos(igniter)
+      if Code.ensure_loaded?(IgniterEcto) do
+        {igniter, repos} = IgniterEcto.list_repos(igniter)
 
         case repos do
           [repo] ->
