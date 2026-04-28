@@ -2,7 +2,7 @@ defmodule Permit.Ecto.MixProject do
   @moduledoc false
   use Mix.Project
 
-  @version "0.2.4"
+  @version "0.3.0"
   @source_url "https://github.com/curiosum-dev/permit_ecto"
 
   def project do
@@ -51,7 +51,7 @@ defmodule Permit.Ecto.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:permit, "~> 0.3.3"},
+      {:permit, "~> 0.4.0"},
       {:ecto, ">= 3.11.2 and < 4.0.0"},
       {:ecto_sql, ">= 3.11.0"},
       {:postgrex, "~> 0.16", only: :test},
