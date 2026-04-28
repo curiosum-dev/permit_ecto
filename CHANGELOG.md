@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v0.3.0] - 2026-04-28
+
+### Added
+
+- Igniter installer task (`mix permit_ecto.install`) for zero config project setup, scaffolds `Authorization` and `Authorization.Permissions` modules with auto detection of Ecto repo (#24)
+
+### Fixed
+
+- Added failing test documenting the empty associations edge case (#22)
+
 ## [v0.2.4]
 ### Fixed
 - Fix docs and readme: link typo, examples of `accessible_by` usage.
