@@ -51,11 +51,11 @@ defmodule Permit.Ecto.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:permit, "~> 0.4.0"},
+      {:permit, "~> 0.4.1"},
       {:ecto, ">= 3.11.2 and < 4.0.0"},
       {:ecto_sql, ">= 3.11.0"},
       {:postgrex, "~> 0.16", only: :test},
-      {:jason, "~> 1.3", only: [:dev, :test]},
+      {:jason, "~> 1.3"},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
       {:dialyxir, "~> 1.3", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
@@ -68,7 +68,7 @@ defmodule Permit.Ecto.MixProject do
 
   defp igniter_dep do
     if Version.match?(System.version(), ">= 1.15.0") do
-      [{:igniter, "~> 0.5", only: [:dev, :test], runtime: false}]
+      [{:igniter, "~> 0.5", optional: true, runtime: false}]
     else
       []
     end
