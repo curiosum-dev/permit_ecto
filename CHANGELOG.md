@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [v0.3.1] - 2026-05-25
+
 ### Fixed
 - Reverted `:igniter` dependency from `only: [:dev, :test], runtime: false` back to `optional: true`, restoring correct Igniter behaviour for generator tasks.
 - Fix jason dependency version requirement to allow for newer versions.

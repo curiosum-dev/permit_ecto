@@ -149,8 +149,8 @@ The package can be installed by adding `permit_ecto` to your list of dependencie
 ```elixir
 def deps do
   [
-    {:permit, "~> 0.3.0"},        # Core authorization library
-    {:permit_ecto, "~> 0.2.4"}    # Ecto integration
+    {:permit, "~> 0.4.1"},        # Core authorization library
+    {:permit_ecto, "~> 0.3.1"}    # Ecto integration
   ]
 end
 ```
